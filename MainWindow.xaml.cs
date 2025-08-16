@@ -1,18 +1,43 @@
 ﻿using NAudio.Wave;
 using NAudio.Lame;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
 using System.Configuration;
 using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using TagLib;
+using System.Windows.Data;
+using System.Windows.Media;
 using File = System.IO.File;
 
 namespace AudioRecorder
 {
+    // Converts a numeric level (0-100) to a Brush: Green (low), Yellow (mid), Red (high)
+    public class LevelToBrushConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            try
+            {
+                double v = 0;
+                if (value is double d) v = d;
+                else if (value is float f) v = f;
+                else if (value is int i) v = i;
+                // Default thresholds: <33 green, <66 yellow, else red
+                if (v < 60) return Brushes.Green;
+                if (v < 85) return Brushes.Yellow;
+                return Brushes.Red;
+            }
+            catch
+            {
+                return Brushes.Green;
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            => throw new NotSupportedException();
+    }
+
     public partial class MainWindow : Window
     {
         private WaveInEvent waveIn;
@@ -168,8 +193,15 @@ namespace AudioRecorder
                         float amplitude = Math.Abs(sample / 32768f);
                         if (amplitude > max) max = amplitude;
                     }
-                    // Update ProgressBar on UI thread
-                    Dispatcher.Invoke(() => AudioLevelMeter.Value = max * 100);
+                    // Update ProgressBars on UI thread
+                    Dispatcher.Invoke(() =>
+                    {
+                        var level = max * 100;
+                        if (level < 0) level = 0;
+                        if (level > 100) level = 100;
+                        AudioLevelMeter.Value = level;
+                        CenterRangeMeter.Value = level;
+                    });
                 };
 
                 waveIn.StartRecording();
@@ -192,8 +224,9 @@ namespace AudioRecorder
                 mp3Writer?.Close();
                 mp3Writer?.Dispose();
 
-                // Reset audio level meter
+                // Reset audio level meters
                 AudioLevelMeter.Value = 0;
+                CenterRangeMeter.Value = 0;
 
                 // Add MP3 tags
                 using (var file = TagLib.File.Create(outputFilePath))
