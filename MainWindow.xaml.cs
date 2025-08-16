@@ -22,6 +22,12 @@ public partial class MainWindow
     private bool _closeAfterSave;
     private bool _isRecording; // Track recording state
 
+    // Audio configuration (read from appsettings.json)
+    private int _audioSampleRateHz = 44100; // default 44.1 kHz if not configured
+    private int _audioBitsPerSample = 32; // default 32-bit as requested
+    private int _audioChannels = 2; // default stereo
+    private int _mp3BitrateKbps = 128; // default 128 kbps MP3
+
     public MainWindow()
     {
         InitializeComponent();
@@ -55,6 +61,40 @@ public partial class MainWindow
                 _savePath = map.TryGetValue("SavePath", out var savePathVal) && !string.IsNullOrWhiteSpace(savePathVal?.ToString()) ? savePathVal!.ToString() : defaultSavePath;
                 _autoStartRecording = map.TryGetValue("AutoStartRecording", out var autoVal) && (autoVal is bool b ? b : bool.TryParse(autoVal?.ToString(), out var b2) && b2);
                 _closeAfterSave = map.TryGetValue("CloseAfterSave", out var closeVal) && (closeVal is bool b3 ? b3 : bool.TryParse(closeVal?.ToString(), out var b4) && b4);
+
+                // Audio settings (optional)
+                int ParseInt(object val, int defaultVal)
+                {
+                    if (val == null) return defaultVal;
+                    var s = val.ToString();
+                    if (int.TryParse(s, out var n)) return n;
+                    var digits = new string(s!.Where(char.IsDigit).ToArray());
+                    return int.TryParse(digits, out var n2) ? n2 : defaultVal;
+                }
+
+                if (map.TryGetValue("SampleRateHz", out var srVal))
+                {
+                    var sr = ParseInt(srVal, _audioSampleRateHz);
+                    if (sr > 0) _audioSampleRateHz = sr;
+                }
+
+                if (map.TryGetValue("BitsPerSample", out var bpsVal))
+                {
+                    var bps = ParseInt(bpsVal, _audioBitsPerSample);
+                    _audioBitsPerSample = bps == 32 ? 32 : 16; // limit to 16 or 32
+                }
+
+                if (map.TryGetValue("Channels", out var chVal))
+                {
+                    var ch = ParseInt(chVal, _audioChannels);
+                    _audioChannels = ch < 1 ? 1 : (ch > 2 ? 2 : ch); // clamp 1..2
+                }
+
+                if (map.TryGetValue("Mp3BitrateKbps", out var brVal))
+                {
+                    var br = ParseInt(brVal, _mp3BitrateKbps);
+                    if (br > 0) _mp3BitrateKbps = br;
+                }
             }
             else
             {
@@ -169,49 +209,66 @@ public partial class MainWindow
     {
         _outputFilePath = Path.Combine(_savePath, $"{FileNameTextBox.Text}.mp3");
 
-        try
+        var started = false;
+        Exception? lastError = null;
+
+        // Try with configured bit depth first, then fallback to 16-bit if needed
+        foreach (var bits in new[] { _audioBitsPerSample, 16 })
         {
-            _waveIn = new WaveInEvent
+            if (started) break;
+            if (bits != _audioBitsPerSample && _audioBitsPerSample == 16) break; // avoid duplicate try
+
+            try
             {
-                DeviceNumber = SourceComboBox.SelectedIndex,
-                WaveFormat = new WaveFormat(44100, 16, 2) // 44.1kHz, 16-bit, stereo
-            };
+                _waveIn = new WaveInEvent
+                {
+                    DeviceNumber = SourceComboBox.SelectedIndex,
+                    WaveFormat = new WaveFormat(_audioSampleRateHz, bits, _audioChannels)
+                };
 
-            _mp3Writer = new LameMP3FileWriter(_outputFilePath, _waveIn.WaveFormat, LAMEPreset.STANDARD);
+                // Use configured MP3 bitrate (kbps)
+                _mp3Writer = new LameMP3FileWriter(_outputFilePath, _waveIn.WaveFormat, _mp3BitrateKbps);
 
-            _waveIn.DataAvailable += OnDataAvailable;
-            _waveIn.RecordingStopped += OnRecordingStopped;
+                _waveIn.DataAvailable += OnDataAvailable;
+                _waveIn.RecordingStopped += OnRecordingStopped;
 
-            _waveIn.StartRecording();
-            _isRecording = true;
+                _waveIn.StartRecording();
+                _isRecording = true;
 
-            StartButton.IsEnabled = false;
-            StopButton.IsEnabled = true;
+                StartButton.IsEnabled = false;
+                StopButton.IsEnabled = true;
+                started = true;
+            }
+            catch (Exception ex)
+            {
+                lastError = ex;
+                // Cleanup any partially created resources before retrying
+                try
+                {
+                    _mp3Writer?.Dispose();
+                }
+                catch
+                {
+                    // ignored
+                }
+
+                try
+                {
+                    _waveIn?.Dispose();
+                }
+                catch
+                {
+                    // ignored
+                }
+
+                _mp3Writer = null;
+                _waveIn = null;
+            }
         }
-        catch (Exception ex)
+
+        if (!started)
         {
-            MessageBox.Show($"خطا در شروع ضبط: {ex.Message}", "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
-            // Ensure partial initialization is cleaned up
-            try
-            {
-                _mp3Writer?.Dispose();
-            }
-            catch
-            {
-                // ignored
-            }
-
-            try
-            {
-                _waveIn?.Dispose();
-            }
-            catch
-            {
-                // ignored
-            }
-
-            _mp3Writer = null;
-            _waveIn = null;
+            MessageBox.Show($"خطا در شروع ضبط: {lastError?.Message}", "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
             _isRecording = false;
         }
     }
@@ -223,12 +280,23 @@ public partial class MainWindow
             // Write audio data to MP3 file
             _mp3Writer?.Write(args.Buffer, 0, args.BytesRecorded);
 
-            // Calculate peak amplitude for visualization
+            // Calculate peak amplitude for visualization (supports 16-bit or 32-bit PCM)
             float max = 0;
-            for (var i = 0; i < args.BytesRecorded; i += 2)
+            var bytesPerSample = _waveIn?.WaveFormat.BitsPerSample == 32 ? 4 : 2;
+            for (var i = 0; i <= args.BytesRecorded - bytesPerSample; i += bytesPerSample)
             {
-                var sample = BitConverter.ToInt16(args.Buffer, i);
-                var amplitude = Math.Abs(sample / 32768f);
+                float amplitude;
+                if (bytesPerSample == 4)
+                {
+                    var sample32 = BitConverter.ToInt32(args.Buffer, i);
+                    amplitude = Math.Abs(sample32 / 2147483648f); // normalize int32
+                }
+                else
+                {
+                    var sample16 = BitConverter.ToInt16(args.Buffer, i);
+                    amplitude = Math.Abs(sample16 / 32768f);
+                }
+
                 if (amplitude > max) max = amplitude;
             }
 
