@@ -1,10 +1,7 @@
-﻿using System.Configuration;
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Media;
 using NAudio.Lame;
 using NAudio.Wave;
 using Newtonsoft.Json;
@@ -12,44 +9,14 @@ using File = System.IO.File;
 
 namespace SoundRecorder;
 
-// Converts a numeric level (0-100) to a Brush: Green (low), Yellow (mid), Red (high)
-public class LevelToBrushConverter : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        try
-        {
-            var v = value switch
-            {
-                double d => d,
-                float f => f,
-                int i => i,
-                _ => 0
-            };
-            return v switch
-            {
-                < 60 => Brushes.Green,
-                < 85 => Brushes.Yellow,
-                _ => Brushes.Red
-            };
-        }
-        catch
-        {
-            return Brushes.Green;
-        }
-    }
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
-}
-
-public partial class MainWindow : Window
+public partial class MainWindow
 {
     private WaveInEvent _waveIn;
     private LameMP3FileWriter _mp3Writer;
     private string _outputFilePath;
     private List<string> _categories = [];
     private List<string> _singers = [];
-    private readonly string _dataFilePath = "appData.json";
+    private const string DataFilePath = "appData.json";
     private string _savePath;
     private bool _autoStartRecording;
     private bool _closeAfterSave;
@@ -64,25 +31,47 @@ public partial class MainWindow : Window
         UpdateFileName();
 
         if (_autoStartRecording)
-        {
             StartRecording();
-        }
     }
 
     private void LoadAppSettings()
     {
-        // Read save path, auto-start, and close-after-save settings from appsettings.json
-        _savePath = ConfigurationManager.AppSettings["SavePath"];
-        if (string.IsNullOrEmpty(_savePath))
+        var defaultSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Recordings");
+
+        try
         {
-            _savePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Recordings");
+            string[] candidates =
+            [
+                "appsettings.json",
+                Path.Combine(AppContext.BaseDirectory, "appsettings.json")
+            ];
+
+            var json = (from path in candidates where !string.IsNullOrWhiteSpace(path) && File.Exists(path) select File.ReadAllText(path)).FirstOrDefault();
+
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                var map = JsonConvert.DeserializeObject<Dictionary<string, object>>(json) ?? new Dictionary<string, object>();
+
+                _savePath = map.TryGetValue("SavePath", out var savePathVal) && !string.IsNullOrWhiteSpace(savePathVal?.ToString()) ? savePathVal!.ToString() : defaultSavePath;
+                _autoStartRecording = map.TryGetValue("AutoStartRecording", out var autoVal) && (autoVal is bool b ? b : bool.TryParse(autoVal?.ToString(), out var b2) && b2);
+                _closeAfterSave = map.TryGetValue("CloseAfterSave", out var closeVal) && (closeVal is bool b3 ? b3 : bool.TryParse(closeVal?.ToString(), out var b4) && b4);
+            }
+            else
+            {
+                _savePath = defaultSavePath;
+                _autoStartRecording = false;
+                _closeAfterSave = false;
+            }
+        }
+        catch
+        {
+            _savePath = defaultSavePath;
+            _autoStartRecording = false;
+            _closeAfterSave = false;
         }
 
         // Create the save path directory if it doesn't exist
-        Directory.CreateDirectory(_savePath);
-
-        _autoStartRecording = bool.TryParse(ConfigurationManager.AppSettings["AutoStartRecording"], out var autoStartResult) && autoStartResult;
-        _closeAfterSave = bool.TryParse(ConfigurationManager.AppSettings["CloseAfterSave"], out var closeResult) && closeResult;
+        Directory.CreateDirectory(_savePath!);
     }
 
     private void LoadAudioSources()
@@ -104,14 +93,14 @@ public partial class MainWindow : Window
 
     private void LoadStoredData()
     {
-        if (File.Exists(_dataFilePath))
+        if (File.Exists(DataFilePath))
         {
-            var json = File.ReadAllText(_dataFilePath);
+            var json = File.ReadAllText(DataFilePath);
             var data = JsonConvert.DeserializeObject<Dictionary<string, List<string>>>(json);
             if (data != null)
             {
-                _categories = data.ContainsKey("Categories") ? data["Categories"] : [];
-                _singers = data.ContainsKey("Singers") ? data["Singers"] : [];
+                _categories = data.TryGetValue("Categories", out var categories) ? categories : [];
+                _singers = data.TryGetValue("Singers", out var singers) ? singers : [];
             }
         }
 
@@ -126,7 +115,7 @@ public partial class MainWindow : Window
             { "Categories", _categories },
             { "Singers", _singers }
         };
-        File.WriteAllText(_dataFilePath, JsonConvert.SerializeObject(data, Formatting.Indented));
+        File.WriteAllText(DataFilePath, JsonConvert.SerializeObject(data, Formatting.Indented));
     }
 
     private void UpdateFileName()
@@ -334,7 +323,6 @@ public partial class MainWindow : Window
 
             Dispatcher.BeginInvoke(() =>
             {
-                MessageBox.Show("ضبط با موفقیت ذخیره شد!", "موفقیت", MessageBoxButton.OK, MessageBoxImage.Information);
                 StartButton.IsEnabled = true;
                 StopButton.IsEnabled = false;
 
@@ -361,12 +349,10 @@ public partial class MainWindow : Window
         {
             if (_waveIn != null && _isRecording)
             {
-                // Request stop; cleanup will occur in OnRecordingStopped
                 _waveIn.StopRecording();
             }
             else
             {
-                // Not recording; ensure UI is consistent
                 StartButton.IsEnabled = true;
             }
 
