@@ -15,7 +15,7 @@
             </Style.Triggers>
         </Style>
     </Window.Resources>
-    <Grid Margin="10">
+    <Grid Margin="10" FlowDirection="RightToLeft">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -26,30 +26,30 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <Label Grid.Row="0" Grid.Column="1" Content="منبع ضبط:" Margin="5" HorizontalAlignment="Right"/>
-        <ComboBox Grid.Row="0" Grid.Column="0" x:Name="SourceComboBox" Margin="5" FlowDirection="RightToLeft"/>
+        <Label Grid.Row="0" Grid.Column="0" Content="منبع ضبط:" Margin="5" HorizontalAlignment="Right"/>
+        <ComboBox Grid.Row="0" Grid.Column="1" x:Name="SourceComboBox" Margin="5" FlowDirection="RightToLeft"/>
 
-        <Label Grid.Row="1" Grid.Column="1" Content="دسته‌بندی:" Margin="5" HorizontalAlignment="Right"/>
-        <ComboBox Grid.Row="1" Grid.Column="0" x:Name="CategoryComboBox" Margin="5" IsEditable="True" 
+        <Label Grid.Row="1" Grid.Column="0" Content="دسته‌بندی:" Margin="5" HorizontalAlignment="Right"/>
+        <ComboBox Grid.Row="1" Grid.Column="1" x:Name="CategoryComboBox" Margin="5" IsEditable="True" 
                   TextBoxBase.TextChanged="CategoryComboBox_TextChanged" FlowDirection="RightToLeft"/>
 
-        <Label Grid.Row="2" Grid.Column="1" Content="نام خواننده:" Margin="5" HorizontalAlignment="Right"/>
-        <ComboBox Grid.Row="2" Grid.Column="0" x:Name="SingerComboBox" Margin="5" IsEditable="True" 
+        <Label Grid.Row="2" Grid.Column="0" Content="نام خواننده:" Margin="5" HorizontalAlignment="Right"/>
+        <ComboBox Grid.Row="2" Grid.Column="1" x:Name="SingerComboBox" Margin="5" IsEditable="True" 
                   SelectionChanged="SingerComboBox_SelectionChanged" TextBoxBase.TextChanged="SingerComboBox_TextChanged" FlowDirection="RightToLeft"/>
 
-        <Label Grid.Row="3" Grid.Column="1" Content="نام فایل:" Margin="5" HorizontalAlignment="Right"/>
-        <TextBox Grid.Row="3" Grid.Column="0" x:Name="FileNameTextBox" Margin="5" IsReadOnly="True" FlowDirection="RightToLeft"/>
+        <Label Grid.Row="3" Grid.Column="0" Content="نام فایل:" Margin="5" HorizontalAlignment="Right"/>
+        <TextBox Grid.Row="3" Grid.Column="1" x:Name="FileNameTextBox" Margin="5" IsReadOnly="True" FlowDirection="RightToLeft"/>
 
         <StackPanel Grid.Row="4" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
             <Button x:Name="StartButton" Content="شروع ضبط" Width="100" Margin="5" Click="StartButton_Click"/>
             <Button x:Name="StopButton" Content="توقف ضبط" Width="100" Margin="5" Click="StopButton_Click" IsEnabled="False"/>
         </StackPanel>
 
-        <Label Grid.Row="5" Grid.Column="1" Content="قدرت صدا:" Margin="5" HorizontalAlignment="Right"/>
-        <ProgressBar Grid.Row="5" Grid.Column="0" x:Name="AudioLevelMeter" Margin="5" Minimum="0" Maximum="100" Height="20" Style="{StaticResource AudioLevelMeterStyle}"/>
+        <Label Grid.Row="5" Grid.Column="0" Content="قدرت صدا:" Margin="5" HorizontalAlignment="Right"/>
+        <ProgressBar Grid.Row="5" Grid.Column="1" x:Name="AudioLevelMeter" Margin="5" Minimum="0" Maximum="100" Height="20" Style="{StaticResource AudioLevelMeterStyle}"/>
     </Grid>
 </Window>
