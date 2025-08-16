@@ -53,6 +53,7 @@ public partial class MainWindow : Window
     private string _savePath;
     private bool _autoStartRecording;
     private bool _closeAfterSave;
+    private bool _isRecording; // Track recording state
 
     public MainWindow()
     {
@@ -80,13 +81,13 @@ public partial class MainWindow : Window
         // Create the save path directory if it doesn't exist
         Directory.CreateDirectory(_savePath);
 
-        _autoStartRecording = bool.TryParse(ConfigurationManager.AppSettings["AutoStartRecording"], out bool autoStartResult) && autoStartResult;
-        _closeAfterSave = bool.TryParse(ConfigurationManager.AppSettings["CloseAfterSave"], out bool closeResult) && closeResult;
+        _autoStartRecording = bool.TryParse(ConfigurationManager.AppSettings["AutoStartRecording"], out var autoStartResult) && autoStartResult;
+        _closeAfterSave = bool.TryParse(ConfigurationManager.AppSettings["CloseAfterSave"], out var closeResult) && closeResult;
     }
 
     private void LoadAudioSources()
     {
-        for (int i = 0; i < WaveIn.DeviceCount; i++)
+        for (var i = 0; i < WaveIn.DeviceCount; i++)
         {
             var capabilities = WaveIn.GetCapabilities(i);
             SourceComboBox.Items.Add(capabilities.ProductName);
@@ -188,56 +189,141 @@ public partial class MainWindow : Window
             };
 
             _mp3Writer = new LameMP3FileWriter(_outputFilePath, _waveIn.WaveFormat, LAMEPreset.STANDARD);
-            _waveIn.DataAvailable += (s, args) =>
-            {
-                // Write audio data to MP3 file
-                _mp3Writer.Write(args.Buffer, 0, args.BytesRecorded);
 
-                // Calculate peak amplitude for visualization
-                float max = 0;
-                for (int i = 0; i < args.BytesRecorded; i += 2)
-                {
-                    short sample = BitConverter.ToInt16(args.Buffer, i);
-                    float amplitude = Math.Abs(sample / 32768f);
-                    if (amplitude > max) max = amplitude;
-                }
-
-                // Update ProgressBars on UI thread
-                Dispatcher.Invoke(() =>
-                {
-                    var level = max * 100;
-                    if (level < 0) level = 0;
-                    if (level > 100) level = 100;
-                    AudioLevelMeter.Value = level;
-                    CenterRangeMeter.Value = level;
-                });
-            };
+            _waveIn.DataAvailable += OnDataAvailable;
+            _waveIn.RecordingStopped += OnRecordingStopped;
 
             _waveIn.StartRecording();
+            _isRecording = true;
+
             StartButton.IsEnabled = false;
             StopButton.IsEnabled = true;
         }
         catch (Exception ex)
         {
             MessageBox.Show($"خطا در شروع ضبط: {ex.Message}", "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
+            // Ensure partial initialization is cleaned up
+            try
+            {
+                _mp3Writer?.Dispose();
+            }
+            catch
+            {
+                // ignored
+            }
+
+            try
+            {
+                _waveIn?.Dispose();
+            }
+            catch
+            {
+                // ignored
+            }
+
+            _mp3Writer = null;
+            _waveIn = null;
+            _isRecording = false;
         }
     }
 
-    private void StopButton_Click(object sender, RoutedEventArgs e)
+    private void OnDataAvailable(object? sender, WaveInEventArgs args)
     {
         try
         {
-            _waveIn?.StopRecording();
-            _waveIn?.Dispose();
-            _waveIn?.Dispose();
-            _mp3Writer?.Close();
-            _mp3Writer?.Dispose();
+            // Write audio data to MP3 file
+            _mp3Writer?.Write(args.Buffer, 0, args.BytesRecorded);
 
-            // Reset audio level meters
+            // Calculate peak amplitude for visualization
+            float max = 0;
+            for (var i = 0; i < args.BytesRecorded; i += 2)
+            {
+                var sample = BitConverter.ToInt16(args.Buffer, i);
+                var amplitude = Math.Abs(sample / 32768f);
+                if (amplitude > max) max = amplitude;
+            }
+
+            // Update ProgressBars on UI thread
+            Dispatcher.BeginInvoke(() =>
+            {
+                var level = max * 100;
+                if (level < 0) level = 0;
+                if (level > 100) level = 100;
+                AudioLevelMeter.Value = level;
+                CenterRangeMeter.Value = level;
+            });
+        }
+        catch
+        {
+            // Swallow exceptions during shutdown race; finalization happens in RecordingStopped
+        }
+    }
+
+    private void OnRecordingStopped(object? sender, StoppedEventArgs e)
+    {
+        // Unsubscribe first to avoid re-entrancy
+        if (_waveIn != null)
+        {
+            _waveIn.DataAvailable -= OnDataAvailable;
+            _waveIn.RecordingStopped -= OnRecordingStopped;
+        }
+
+        // Dispose resources safely
+        try
+        {
+            _waveIn?.Dispose();
+        }
+        catch
+        {
+            // ignored
+        }
+
+        _waveIn = null;
+
+        try
+        {
+            _mp3Writer?.Flush();
+        }
+        catch
+        {
+            // ignored
+        }
+
+        try
+        {
+            _mp3Writer?.Dispose();
+        }
+        catch
+        {
+            // ignored
+        }
+
+        _mp3Writer = null;
+
+        _isRecording = false;
+
+        // Reset audio level meters
+        Dispatcher.BeginInvoke(() =>
+        {
             AudioLevelMeter.Value = 0;
             CenterRangeMeter.Value = 0;
+        });
 
-            // Add MP3 tags
+        // If there was a capture error, inform the user
+        if (e.Exception != null)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                MessageBox.Show($"خطا در ضبط صوت: {e.Exception.Message}", "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
+                StartButton.IsEnabled = true;
+                StopButton.IsEnabled = false;
+            });
+            return;
+        }
+
+        // Add MP3 tags after file is closed
+        try
+        {
             using (var file = TagLib.File.Create(_outputFilePath))
             {
                 file.Tag.Title = FileNameTextBox.Text;
@@ -246,15 +332,45 @@ public partial class MainWindow : Window
                 file.Save();
             }
 
-            MessageBox.Show("ضبط با موفقیت ذخیره شد!", "موفقیت", MessageBoxButton.OK, MessageBoxImage.Information);
-            StartButton.IsEnabled = true;
-            StopButton.IsEnabled = false;
-
-            // Close the app if configured
-            if (_closeAfterSave)
+            Dispatcher.BeginInvoke(() =>
             {
-                Application.Current.Shutdown();
+                MessageBox.Show("ضبط با موفقیت ذخیره شد!", "موفقیت", MessageBoxButton.OK, MessageBoxImage.Information);
+                StartButton.IsEnabled = true;
+                StopButton.IsEnabled = false;
+
+                if (_closeAfterSave)
+                {
+                    Application.Current.Shutdown();
+                }
+            });
+        }
+        catch (Exception tagEx)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                MessageBox.Show($"ذخیره برچسب‌ها با خطا مواجه شد: {tagEx.Message}", "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
+                StartButton.IsEnabled = true;
+                StopButton.IsEnabled = false;
+            });
+        }
+    }
+
+    private void StopButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (_waveIn != null && _isRecording)
+            {
+                // Request stop; cleanup will occur in OnRecordingStopped
+                _waveIn.StopRecording();
             }
+            else
+            {
+                // Not recording; ensure UI is consistent
+                StartButton.IsEnabled = true;
+            }
+
+            StopButton.IsEnabled = false;
         }
         catch (Exception ex)
         {
