@@ -6,13 +6,15 @@
         <Nullable>disable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <UseWPF>true</UseWPF>
+        <ApplicationIcon>app-icon.ico</ApplicationIcon>
     </PropertyGroup>
+
     <ItemGroup>
-        <PackageReference Include="NAudio" Version="2.2.1" />
-        <PackageReference Include="NAudio.Lame" Version="2.0.1" />
-        <PackageReference Include="TagLibSharp" Version="2.3.0" />
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-        <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
+        <PackageReference Include="NAudio" Version="2.2.1"/>
+        <PackageReference Include="NAudio.Lame" Version="2.0.1"/>
+        <PackageReference Include="TagLibSharp" Version="2.3.0"/>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
+        <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -20,7 +22,9 @@
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
     </ItemGroup>
-  <ItemGroup>
-    <Resource Include="IRANSans(FaNum).ttf" />
-  </ItemGroup>
+
+    <ItemGroup>
+        <Resource Include="IRANSans(FaNum).ttf"/>
+        <Resource Include="app-icon.ico"/>
+    </ItemGroup>
 </Project>
