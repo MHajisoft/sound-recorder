@@ -2,6 +2,8 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Shell;
 using NAudio.Lame;
 using NAudio.Wave;
 using Newtonsoft.Json;
@@ -29,6 +31,17 @@ public partial class MainWindow
     public MainWindow()
     {
         InitializeComponent();
+
+        // Configure WindowChrome programmatically to keep resizing on a borderless window
+        var chrome = new WindowChrome
+        {
+            CaptionHeight = 0,
+            ResizeBorderThickness = new Thickness(6),
+            GlassFrameThickness = new Thickness(0),
+            UseAeroCaptionButtons = false
+        };
+        WindowChrome.SetWindowChrome(this, chrome);
+
         LoadAppSettings();
         LoadAudioSources();
         LoadStoredData();
@@ -486,5 +499,47 @@ public partial class MainWindow
         {
             MessageBox.Show($"خطا در توقف ضبط: {ex.Message}", "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    // --- Custom Title Bar Handlers ---
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2)
+        {
+            ToggleMaxRestore();
+            return;
+        }
+        if (e.ButtonState == MouseButtonState.Pressed)
+        {
+            try { DragMove(); } catch { /* ignore */ }
+        }
+    }
+
+    private void TitleBar_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        ToggleMaxRestore();
+    }
+
+    private void MinButton_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void MaxButton_Click(object sender, RoutedEventArgs e)
+    {
+        ToggleMaxRestore();
+    }
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+
+    private void ToggleMaxRestore()
+    {
+        if (WindowState == WindowState.Maximized)
+            WindowState = WindowState.Normal;
+        else
+            WindowState = WindowState.Maximized;
     }
 }

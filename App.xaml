@@ -4,6 +4,19 @@
              xmlns:local="clr-namespace:SoundRecorder"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <FontFamily x:Key="AppFont">pack://application:,,,/IRANSans(FaNum).ttf#IRANSans(FaNum)</FontFamily>
+
+        <!-- Apply custom font to all controls by default -->
+        <Style TargetType="{x:Type Control}">
+            <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
+        </Style>
+        <!-- Apply custom font to TextBlock (not a Control) -->
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
+        </Style>
+        <!-- Apply custom font to Window content scope -->
+        <Style TargetType="{x:Type Window}">
+            <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
+        </Style>
     </Application.Resources>
 </Application>
