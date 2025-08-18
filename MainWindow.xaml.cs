@@ -24,8 +24,6 @@ public partial class MainWindow
 
     // Audio configuration (read from appsettings.json)
     private int _audioSampleRateHz = 44100; // default 44.1 kHz if not configured
-    private int _audioBitsPerSample = 32; // default 32-bit as requested
-    private int _audioChannels = 2; // default stereo
     private int _mp3BitrateKbps = 128; // default 128 kbps MP3
 
     public MainWindow()
@@ -76,18 +74,6 @@ public partial class MainWindow
                 {
                     var sr = ParseInt(srVal, _audioSampleRateHz);
                     if (sr > 0) _audioSampleRateHz = sr;
-                }
-
-                if (map.TryGetValue("BitsPerSample", out var bpsVal))
-                {
-                    var bps = ParseInt(bpsVal, _audioBitsPerSample);
-                    _audioBitsPerSample = bps == 32 ? 32 : 16; // limit to 16 or 32
-                }
-
-                if (map.TryGetValue("Channels", out var chVal))
-                {
-                    var ch = ParseInt(chVal, _audioChannels);
-                    _audioChannels = ch < 1 ? 1 : (ch > 2 ? 2 : ch); // clamp 1..2
                 }
 
                 if (map.TryGetValue("Mp3BitrateKbps", out var brVal))
@@ -212,58 +198,51 @@ public partial class MainWindow
         var started = false;
         Exception? lastError = null;
 
-        // Try with configured bit depth first, then fallback to 16-bit if needed
-        foreach (var bits in new[] { _audioBitsPerSample, 16 })
+        try
         {
-            if (started) break;
-            if (bits != _audioBitsPerSample && _audioBitsPerSample == 16) break; // avoid duplicate try
+            _waveIn = new WaveInEvent
+            {
+                DeviceNumber = SourceComboBox.SelectedIndex,
+                WaveFormat = new WaveFormat(_audioSampleRateHz, 16, 2)
+            };
+
+            // Use configured MP3 bitrate (kbps)
+            _mp3Writer = new LameMP3FileWriter(_outputFilePath, _waveIn.WaveFormat, _mp3BitrateKbps);
+
+            _waveIn.DataAvailable += OnDataAvailable;
+            _waveIn.RecordingStopped += OnRecordingStopped;
+
+            _waveIn.StartRecording();
+            _isRecording = true;
+
+            StartButton.IsEnabled = false;
+            StopButton.IsEnabled = true;
+            started = true;
+        }
+        catch (Exception ex)
+        {
+            lastError = ex;
+            // Cleanup any partially created resources before retrying
+            try
+            {
+                _mp3Writer?.Dispose();
+            }
+            catch
+            {
+                // ignored
+            }
 
             try
             {
-                _waveIn = new WaveInEvent
-                {
-                    DeviceNumber = SourceComboBox.SelectedIndex,
-                    WaveFormat = new WaveFormat(_audioSampleRateHz, bits, _audioChannels)
-                };
-
-                // Use configured MP3 bitrate (kbps)
-                _mp3Writer = new LameMP3FileWriter(_outputFilePath, _waveIn.WaveFormat, _mp3BitrateKbps);
-
-                _waveIn.DataAvailable += OnDataAvailable;
-                _waveIn.RecordingStopped += OnRecordingStopped;
-
-                _waveIn.StartRecording();
-                _isRecording = true;
-
-                StartButton.IsEnabled = false;
-                StopButton.IsEnabled = true;
-                started = true;
+                _waveIn?.Dispose();
             }
-            catch (Exception ex)
+            catch
             {
-                lastError = ex;
-                // Cleanup any partially created resources before retrying
-                try
-                {
-                    _mp3Writer?.Dispose();
-                }
-                catch
-                {
-                    // ignored
-                }
-
-                try
-                {
-                    _waveIn?.Dispose();
-                }
-                catch
-                {
-                    // ignored
-                }
-
-                _mp3Writer = null;
-                _waveIn = null;
+                // ignored
             }
+
+            _mp3Writer = null;
+            _waveIn = null;
         }
 
         if (!started)
