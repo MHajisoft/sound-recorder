@@ -76,7 +76,7 @@
                   SelectionChanged="SingerComboBox_SelectionChanged" TextBoxBase.TextChanged="SingerComboBox_TextChanged" FlowDirection="RightToLeft"/>
 
         <Label Grid.Row="3" Grid.Column="0" Content="نام فایل:" Margin="5" HorizontalAlignment="Right"/>
-        <TextBox Grid.Row="3" Grid.Column="1" x:Name="FileNameTextBox" Margin="5" IsReadOnly="True" FlowDirection="RightToLeft"/>
+        <TextBox Grid.Row="3" Grid.Column="1" x:Name="FileNameTextBox" Margin="5" FlowDirection="RightToLeft"/>
 
         <StackPanel Grid.Row="4" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
             <Button x:Name="StartButton" Content="شروع ضبط" Width="100" Margin="5" Click="StartButton_Click"/>

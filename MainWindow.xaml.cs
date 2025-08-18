@@ -144,6 +144,39 @@ public partial class MainWindow
         File.WriteAllText(DataFilePath, JsonConvert.SerializeObject(data, Formatting.Indented));
     }
 
+    // Helpers for filename handling
+    private static string SanitizeFileName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "خواننده ناشناس";
+        var invalid = Path.GetInvalidFileNameChars();
+        var sb = new System.Text.StringBuilder(name.Length);
+        foreach (var ch in name)
+        {
+            sb.Append(invalid.Contains(ch) ? '-' : ch);
+        }
+        var cleaned = sb.ToString().Trim();
+        cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, "\\s+", " ");
+        cleaned = cleaned.Trim(' ', '.');
+        if (string.IsNullOrWhiteSpace(cleaned)) cleaned = "خواننده ناشناس";
+        return cleaned;
+    }
+
+    private static string GetUniquePath(string path)
+    {
+        if (!File.Exists(path)) return path;
+        var dir = Path.GetDirectoryName(path);
+        var fileName = Path.GetFileNameWithoutExtension(path);
+        var ext = Path.GetExtension(path);
+        int counter = 1;
+        string candidate;
+        do
+        {
+            candidate = Path.Combine(dir!, $"{fileName} ({counter}){ext}");
+            counter++;
+        } while (File.Exists(candidate));
+        return candidate;
+    }
+
     private void UpdateFileName()
     {
         var singer = string.IsNullOrWhiteSpace(SingerComboBox.Text) ? "خواننده ناشناس" : SingerComboBox.Text.Trim();
@@ -193,7 +226,9 @@ public partial class MainWindow
 
     private void StartRecording()
     {
-        _outputFilePath = Path.Combine(_savePath, $"{FileNameTextBox.Text}.mp3");
+        var baseName = SanitizeFileName(string.IsNullOrWhiteSpace(FileNameTextBox.Text) ? "خواننده ناشناس" : FileNameTextBox.Text.Trim());
+        var initialPath = Path.Combine(_savePath, $"{baseName}.mp3");
+        _outputFilePath = GetUniquePath(initialPath);
 
         var started = false;
         Exception? lastError = null;
@@ -357,14 +392,56 @@ public partial class MainWindow
             return;
         }
 
-        // Add MP3 tags after file is closed
+        // Determine desired filename from UI and rename if needed
+        string uiTitle = "";
+        string uiCategory = "";
+        string uiSinger = "";
+        Dispatcher.Invoke(() =>
+        {
+            uiTitle = FileNameTextBox.Text;
+            uiCategory = CategoryComboBox.Text;
+            uiSinger = SingerComboBox.Text;
+        });
+
+        try
+        {
+            var desiredBase = SanitizeFileName(string.IsNullOrWhiteSpace(uiTitle) ? "فایل ناشناس" : uiTitle.Trim());
+            var desiredPathInitial = Path.Combine(_savePath, $"{desiredBase}.mp3");
+
+            // If path differs, attempt rename
+            if (!string.Equals(_outputFilePath, desiredPathInitial, StringComparison.OrdinalIgnoreCase))
+            {
+                var desiredPath = GetUniquePath(desiredPathInitial);
+                try
+                {
+                    if (File.Exists(_outputFilePath))
+                    {
+                        File.Move(_outputFilePath, desiredPath);
+                        _outputFilePath = desiredPath;
+                    }
+                }
+                catch (Exception moveEx)
+                {
+                    Dispatcher.BeginInvoke(() =>
+                    {
+                        MessageBox.Show($"تغییر نام فایل پس از ضبط ناموفق بود: {moveEx.Message}", "خطا", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    });
+                }
+            }
+        }
+        catch
+        {
+            // Ignore rename errors here; tagging still attempted
+        }
+
+        // Add MP3 tags after file is closed/renamed
         try
         {
             using (var file = TagLib.File.Create(_outputFilePath))
             {
-                file.Tag.Title = FileNameTextBox.Text;
-                file.Tag.Genres = [string.IsNullOrWhiteSpace(CategoryComboBox.Text) ? "دسته‌بندی پیش‌فرض" : CategoryComboBox.Text];
-                file.Tag.Performers = [string.IsNullOrWhiteSpace(SingerComboBox.Text) ? "خواننده ناشناس" : SingerComboBox.Text];
+                file.Tag.Title = uiTitle;
+                file.Tag.Genres = [string.IsNullOrWhiteSpace(uiCategory) ? "دسته‌بندی پیش‌فرض" : uiCategory];
+                file.Tag.Performers = [string.IsNullOrWhiteSpace(uiSinger) ? "خواننده ناشناس" : uiSinger];
                 file.Save();
             }
 
