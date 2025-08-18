@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Shell;
+using System.Windows.Threading;
 using NAudio.Lame;
 using NAudio.Wave;
 using Newtonsoft.Json;
@@ -23,6 +24,8 @@ public partial class MainWindow
     private bool _autoStartRecording;
     private bool _closeAfterSave;
     private bool _isRecording; // Track recording state
+    private DispatcherTimer _recordTimer;
+    private TimeSpan _elapsed;
 
     // Audio configuration (read from appsettings.json)
     private int _audioSampleRateHz = 44100; // default 44.1 kHz if not configured
@@ -46,6 +49,16 @@ public partial class MainWindow
         LoadAudioSources();
         LoadStoredData();
         UpdateFileName();
+
+        // Initialize recording timer and set initial display
+        _recordTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _recordTimer.Tick += (s, e) =>
+        {
+            _elapsed = _elapsed.Add(TimeSpan.FromSeconds(1));
+            RecordingTimeText.Text = _elapsed.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture);
+        };
+        _elapsed = TimeSpan.Zero;
+        RecordingTimeText.Text = "00:00:00";
 
         if (_autoStartRecording)
             StartRecording();
@@ -266,6 +279,12 @@ public partial class MainWindow
             StartButton.IsEnabled = false;
             StopButton.IsEnabled = true;
             started = true;
+
+            // Start the on-screen HH:MM:SS counter
+            _elapsed = TimeSpan.Zero;
+            RecordingTimeText.Text = "00:00:00";
+            _recordTimer.Stop();
+            _recordTimer.Start();
         }
         catch (Exception ex)
         {
@@ -385,6 +404,9 @@ public partial class MainWindow
         _mp3Writer = null;
 
         _isRecording = false;
+
+        // Stop the HH:MM:SS counter and keep the last shown value (freeze)
+        Dispatcher.BeginInvoke(() => _recordTimer?.Stop());
 
         // Reset audio level meters
         Dispatcher.BeginInvoke(() =>
