@@ -504,42 +504,31 @@ public partial class MainWindow
     // --- Custom Title Bar Handlers ---
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (e.ClickCount == 2)
-        {
-            ToggleMaxRestore();
-            return;
-        }
+        // With ResizeMode=NoResize, disable double-click maximize/restore. Only allow dragging.
         if (e.ButtonState == MouseButtonState.Pressed)
         {
             try { DragMove(); } catch { /* ignore */ }
         }
     }
 
-    private void TitleBar_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-    {
-        ToggleMaxRestore();
-    }
-
-    private void MinButton_Click(object sender, RoutedEventArgs e)
-    {
-        WindowState = WindowState.Minimized;
-    }
-
-    private void MaxButton_Click(object sender, RoutedEventArgs e)
-    {
-        ToggleMaxRestore();
-    }
-
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
-        Close();
-    }
+        // If recording is active, stop and save before closing
+        if (_isRecording && _waveIn != null)
+        {
+            _closeAfterSave = true; // trigger shutdown after RecordingStopped completes save/tagging
+            try
+            {
+                _waveIn.StopRecording();
+            }
+            catch
+            {
+                // If stopping fails for any reason, fallback to closing
+                Application.Current.Shutdown();
+            }
+            return; // wait for RecordingStopped to finish then close
+        }
 
-    private void ToggleMaxRestore()
-    {
-        if (WindowState == WindowState.Maximized)
-            WindowState = WindowState.Normal;
-        else
-            WindowState = WindowState.Maximized;
+        Close();
     }
 }
