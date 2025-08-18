@@ -18,5 +18,19 @@
         <Style TargetType="{x:Type Window}">
             <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
         </Style>
+
+        <!-- Ensure inputs use the custom font and center content vertically -->
+        <Style TargetType="{x:Type TextBox}">
+            <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="{x:Type ComboBox}">
+            <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="{x:Type ComboBoxItem}">
+            <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
     </Application.Resources>
 </Application>
