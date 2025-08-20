@@ -189,6 +189,7 @@ public partial class MainWindow
         {
             sb.Append(invalid.Contains(ch) ? '-' : ch);
         }
+
         var cleaned = sb.ToString().Trim();
         cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, "\\s+", " ");
         cleaned = cleaned.Trim(' ', '.');
@@ -209,6 +210,7 @@ public partial class MainWindow
             candidate = Path.Combine(dir!, $"{fileName} ({counter}){ext}");
             counter++;
         } while (File.Exists(candidate));
+
         return candidate;
     }
 
@@ -221,6 +223,7 @@ public partial class MainWindow
         {
             sb.Append(invalid.Contains(ch) ? '-' : ch);
         }
+
         var cleaned = sb.ToString().Trim();
         cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, "\\s+", " ");
         cleaned = cleaned.Trim(' ', '.');
@@ -478,10 +481,7 @@ public partial class MainWindow
                 }
                 catch (Exception moveEx)
                 {
-                    Dispatcher.BeginInvoke(() =>
-                    {
-                        MessageBox.Show(string.Format(SoundRecorder.Properties.Resources.Warning_RenameAfterRecord_Format, moveEx.Message), SoundRecorder.Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Warning);
-                    });
+                    Dispatcher.BeginInvoke(() => { MessageBox.Show(string.Format(SoundRecorder.Properties.Resources.Warning_RenameAfterRecord_Format, moveEx.Message), SoundRecorder.Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Warning); });
                 }
             }
         }
@@ -499,6 +499,11 @@ public partial class MainWindow
                 file.Tag.Genres = [string.IsNullOrWhiteSpace(uiGenre) ? SoundRecorder.Properties.Resources.Default_Genre : uiGenre];
                 file.Tag.Performers = [string.IsNullOrWhiteSpace(uiSinger) ? SoundRecorder.Properties.Resources.Unknown_Singer : uiSinger];
                 file.Tag.Album = string.IsNullOrWhiteSpace(uiAlbum) ? SoundRecorder.Properties.Resources.Unknown_Album : uiAlbum;
+
+                // Set Year tag using Persian calendar
+                var pc = new PersianCalendar();
+                file.Tag.Year = (uint)pc.GetYear(DateTime.Now);
+
                 file.Save();
             }
 
@@ -507,10 +512,12 @@ public partial class MainWindow
             {
                 _genres.Add(uiGenre);
             }
+
             if (!string.IsNullOrWhiteSpace(uiSinger) && !_singers.Contains(uiSinger))
             {
                 _singers.Add(uiSinger);
             }
+
             if (!string.IsNullOrWhiteSpace(uiAlbum) && !_albums.Contains(uiAlbum))
             {
                 _albums.Add(uiAlbum);
@@ -575,7 +582,14 @@ public partial class MainWindow
         // With ResizeMode=NoResize, disable double-click maximize/restore. Only allow dragging.
         if (e.ButtonState == MouseButtonState.Pressed)
         {
-            try { DragMove(); } catch { /* ignore */ }
+            try
+            {
+                DragMove();
+            }
+            catch
+            {
+                /* ignore */
+            }
         }
     }
 
@@ -594,6 +608,7 @@ public partial class MainWindow
                 // If stopping fails for any reason, fallback to closing
                 Application.Current.Shutdown();
             }
+
             return; // wait for RecordingStopped to finish then close
         }
 
