@@ -79,4 +79,59 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+
+  <data name="Window_Title" xml:space="preserve">
+    <value>ضبط صدا</value>
+  </data>
+  <data name="Label_Source" xml:space="preserve">
+    <value>منبع ضبط:</value>
+  </data>
+  <data name="Label_Category" xml:space="preserve">
+    <value>دسته‌بندی:</value>
+  </data>
+  <data name="Label_Singer" xml:space="preserve">
+    <value>نام خواننده:</value>
+  </data>
+  <data name="Label_FileName" xml:space="preserve">
+    <value>نام فایل:</value>
+  </data>
+  <data name="Button_Start" xml:space="preserve">
+    <value>شروع ضبط</value>
+  </data>
+  <data name="Button_Stop" xml:space="preserve">
+    <value>توقف ضبط</value>
+  </data>
+  <data name="RecordingTime_Initial" xml:space="preserve">
+    <value>00:00:00</value>
+  </data>
+  <data name="Error_Title" xml:space="preserve">
+    <value>خطا</value>
+  </data>
+  <data name="Error_NoInputDevices" xml:space="preserve">
+    <value>هیچ دستگاه ورودی صوتی یافت نشد.</value>
+  </data>
+  <data name="Error_StartRecording_Format" xml:space="preserve">
+    <value>خطا در شروع ضبط: {0}</value>
+  </data>
+  <data name="Error_Recording_Format" xml:space="preserve">
+    <value>خطا در ضبط صوت: {0}</value>
+  </data>
+  <data name="Warning_RenameAfterRecord_Format" xml:space="preserve">
+    <value>تغییر نام فایل پس از ضبط ناموفق بود: {0}</value>
+  </data>
+  <data name="Error_SaveTags_Format" xml:space="preserve">
+    <value>ذخیره برچسب‌ها با خطا مواجه شد: {0}</value>
+  </data>
+  <data name="Error_StopRecording_Format" xml:space="preserve">
+    <value>خطا در توقف ضبط: {0}</value>
+  </data>
+  <data name="Unknown_Singer" xml:space="preserve">
+    <value>خواننده ناشناس</value>
+  </data>
+  <data name="Unknown_File" xml:space="preserve">
+    <value>فایل ناشناس</value>
+  </data>
+  <data name="Default_Category" xml:space="preserve">
+    <value>دسته‌بندی پیش‌فرض</value>
+  </data>
 </root>

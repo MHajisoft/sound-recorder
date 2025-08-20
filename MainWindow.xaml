@@ -2,7 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:soundRecorder="clr-namespace:SoundRecorder"
-        Title="ضبط صدا" Height="350" Width="400" FlowDirection="LeftToRight" Icon="app-icon.ico"
+        xmlns:prop="clr-namespace:SoundRecorder.Properties"
+        Title="{x:Static prop:Resources.Window_Title}" Height="350" Width="400" FlowDirection="LeftToRight" Icon="app-icon.ico"
         WindowStyle="None" ResizeMode="NoResize">
 
     <Window.Resources>
