@@ -127,9 +127,9 @@
             <Label Grid.Row="0" Grid.Column="0" Content="{x:Static prop:Resources.Label_Source}" Margin="5" HorizontalAlignment="Right"/>
             <ComboBox Grid.Row="0" Grid.Column="1" x:Name="SourceComboBox" Margin="5" FlowDirection="LeftToRight"/>
 
-            <Label Grid.Row="1" Grid.Column="0" Content="{x:Static prop:Resources.Label_Category}" Margin="5" HorizontalAlignment="Right"/>
-            <ComboBox Grid.Row="1" Grid.Column="1" x:Name="CategoryComboBox" Margin="5" IsEditable="True" 
-                      TextBoxBase.TextChanged="CategoryComboBox_TextChanged" FlowDirection="RightToLeft"/>
+            <Label Grid.Row="1" Grid.Column="0" Content="{x:Static prop:Resources.Label_Genre}" Margin="5" HorizontalAlignment="Right"/>
+            <ComboBox Grid.Row="1" Grid.Column="1" x:Name="GenreComboBox" Margin="5" IsEditable="True" 
+                      TextBoxBase.TextChanged="GenreComboBox_TextChanged" FlowDirection="RightToLeft"/>
 
             <Label Grid.Row="2" Grid.Column="0" Content="{x:Static prop:Resources.Label_Singer}" Margin="5" HorizontalAlignment="Right"/>
             <ComboBox Grid.Row="2" Grid.Column="1" x:Name="SingerComboBox" Margin="5" IsEditable="True" 

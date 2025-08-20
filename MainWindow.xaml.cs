@@ -18,7 +18,7 @@ public partial class MainWindow
     private WaveInEvent _waveIn;
     private LameMP3FileWriter _mp3Writer;
     private string _outputFilePath;
-    private List<string> _categories = [];
+    private List<string> _genres = [];
     private List<string> _singers = [];
     private const string DataFilePath = "appData.json";
     private string _savePath;
@@ -152,12 +152,16 @@ public partial class MainWindow
             var data = JsonConvert.DeserializeObject<Dictionary<string, List<string>>>(json);
             if (data != null)
             {
-                _categories = data.TryGetValue("Categories", out var categories) ? categories : [];
+                if (data.TryGetValue("Genres", out var genres))
+                    _genres = genres;
+                else
+                    _genres = [];
+
                 _singers = data.TryGetValue("Singers", out var singers) ? singers : [];
             }
         }
 
-        CategoryComboBox.ItemsSource = _categories;
+        GenreComboBox.ItemsSource = _genres;
         SingerComboBox.ItemsSource = _singers;
     }
 
@@ -165,7 +169,7 @@ public partial class MainWindow
     {
         var data = new Dictionary<string, List<string>>
         {
-            { "Categories", _categories },
+            { "Genres", _genres },
             { "Singers", _singers }
         };
         File.WriteAllText(DataFilePath, JsonConvert.SerializeObject(data, Formatting.Indented));
@@ -213,7 +217,7 @@ public partial class MainWindow
         FileNameTextBox.Text = $"{singer}-{persianDate}";
     }
 
-    private void CategoryComboBox_TextChanged(object sender, TextChangedEventArgs e)
+    private void GenreComboBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         // Do not mutate the stored list on each key press to avoid incremental entries (h, he, hel, ...)
         // Final values are added when recording is finished and saved.
@@ -415,14 +419,14 @@ public partial class MainWindow
 
         // Determine desired filename from UI and rename if needed
         string uiTitle = "";
-        string uiCategory = "";
+        string uiGenre = "";
         string uiSinger = "";
-        Dispatcher.Invoke(() =>
+        Dispatcher.Invoke(new Action(() =>
         {
             uiTitle = FileNameTextBox.Text;
-            uiCategory = CategoryComboBox.Text;
+            uiGenre = GenreComboBox.Text;
             uiSinger = SingerComboBox.Text;
-        });
+        }));
 
         try
         {
@@ -461,15 +465,15 @@ public partial class MainWindow
             using (var file = TagLib.File.Create(_outputFilePath))
             {
                 file.Tag.Title = uiTitle;
-                file.Tag.Genres = [string.IsNullOrWhiteSpace(uiCategory) ? SoundRecorder.Properties.Resources.Default_Category : uiCategory];
+                file.Tag.Genres = [string.IsNullOrWhiteSpace(uiGenre) ? SoundRecorder.Properties.Resources.Default_Genre : uiGenre];
                 file.Tag.Performers = [string.IsNullOrWhiteSpace(uiSinger) ? SoundRecorder.Properties.Resources.Unknown_Singer : uiSinger];
                 file.Save();
             }
 
             // Add final values to lists once recording finished
-            if (!string.IsNullOrWhiteSpace(uiCategory) && !_categories.Contains(uiCategory))
+            if (!string.IsNullOrWhiteSpace(uiGenre) && !_genres.Contains(uiGenre))
             {
-                _categories.Add(uiCategory);
+                _genres.Add(uiGenre);
             }
             if (!string.IsNullOrWhiteSpace(uiSinger) && !_singers.Contains(uiSinger))
             {
@@ -481,8 +485,8 @@ public partial class MainWindow
             Dispatcher.BeginInvoke(() =>
             {
                 // Refresh dropdowns to reflect newly added entries after final save
-                CategoryComboBox.ItemsSource = null;
-                CategoryComboBox.ItemsSource = _categories;
+                GenreComboBox.ItemsSource = null;
+                GenreComboBox.ItemsSource = _genres;
                 SingerComboBox.ItemsSource = null;
                 SingerComboBox.ItemsSource = _singers;
 

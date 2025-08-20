@@ -78,11 +78,11 @@ namespace SoundRecorder.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to دسته‌بندی پیش‌فرض.
+        ///   Looks up a localized string similar to ژانر پیش‌فرض.
         /// </summary>
-        public static string Default_Category {
+        public static string Default_Genre {
             get {
-                return ResourceManager.GetString("Default_Category", resourceCulture);
+                return ResourceManager.GetString("Default_Genre", resourceCulture);
             }
         }
         
@@ -141,20 +141,20 @@ namespace SoundRecorder.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to دسته‌بندی:.
-        /// </summary>
-        public static string Label_Category {
-            get {
-                return ResourceManager.GetString("Label_Category", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to نام فایل:.
         /// </summary>
         public static string Label_FileName {
             get {
                 return ResourceManager.GetString("Label_FileName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to ژانر:.
+        /// </summary>
+        public static string Label_Genre {
+            get {
+                return ResourceManager.GetString("Label_Genre", resourceCulture);
             }
         }
         

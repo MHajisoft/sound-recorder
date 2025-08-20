@@ -86,8 +86,8 @@
   <data name="Label_Source" xml:space="preserve">
     <value>منبع ضبط:</value>
   </data>
-  <data name="Label_Category" xml:space="preserve">
-    <value>دسته‌بندی:</value>
+  <data name="Label_Genre" xml:space="preserve">
+    <value>ژانر:</value>
   </data>
   <data name="Label_Singer" xml:space="preserve">
     <value>نام خواننده:</value>
@@ -131,7 +131,7 @@
   <data name="Unknown_File" xml:space="preserve">
     <value>فایل ناشناس</value>
   </data>
-  <data name="Default_Category" xml:space="preserve">
-    <value>دسته‌بندی پیش‌فرض</value>
+  <data name="Default_Genre" xml:space="preserve">
+    <value>ژانر پیش‌فرض</value>
   </data>
 </root>
