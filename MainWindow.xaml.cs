@@ -214,15 +214,8 @@ public partial class MainWindow
 
     private void CategoryComboBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        var category = CategoryComboBox.Text.Trim();
-        if (!string.IsNullOrEmpty(category) && !_categories.Contains(category))
-        {
-            _categories.Add(category);
-            SaveStoredData();
-            CategoryComboBox.ItemsSource = null;
-            CategoryComboBox.ItemsSource = _categories;
-            CategoryComboBox.Text = category;
-        }
+        // Do not mutate the stored list on each key press to avoid incremental entries (h, he, hel, ...)
+        // Final values are added when recording is finished and saved.
     }
 
     private void SingerComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -232,16 +225,8 @@ public partial class MainWindow
 
     private void SingerComboBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        var singer = SingerComboBox.Text.Trim();
-        if (!string.IsNullOrEmpty(singer) && !_singers.Contains(singer))
-        {
-            _singers.Add(singer);
-            SaveStoredData();
-            SingerComboBox.ItemsSource = null;
-            SingerComboBox.ItemsSource = _singers;
-            SingerComboBox.Text = singer;
-        }
-
+        // Do not mutate the stored list on each key press to avoid incremental entries.
+        // Only update the suggested filename as the user types.
         UpdateFileName();
     }
 
@@ -480,8 +465,26 @@ public partial class MainWindow
                 file.Save();
             }
 
+            // Add final values to lists once recording finished
+            if (!string.IsNullOrWhiteSpace(uiCategory) && !_categories.Contains(uiCategory))
+            {
+                _categories.Add(uiCategory);
+            }
+            if (!string.IsNullOrWhiteSpace(uiSinger) && !_singers.Contains(uiSinger))
+            {
+                _singers.Add(uiSinger);
+            }
+
+            SaveStoredData();
+
             Dispatcher.BeginInvoke(() =>
             {
+                // Refresh dropdowns to reflect newly added entries after final save
+                CategoryComboBox.ItemsSource = null;
+                CategoryComboBox.ItemsSource = _categories;
+                SingerComboBox.ItemsSource = null;
+                SingerComboBox.ItemsSource = _singers;
+
                 StartButton.IsEnabled = true;
                 StopButton.IsEnabled = false;
 
