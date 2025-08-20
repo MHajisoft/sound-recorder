@@ -8,7 +8,6 @@ using System.Windows.Threading;
 using NAudio.Lame;
 using NAudio.Wave;
 using Newtonsoft.Json;
-using SoundRecorder.Properties;
 using File = System.IO.File;
 
 namespace SoundRecorder;
@@ -36,6 +35,7 @@ public partial class MainWindow
     public MainWindow()
     {
         InitializeComponent();
+
 
         // Configure WindowChrome programmatically to keep resizing on a borderless window
         var chrome = new WindowChrome
@@ -231,6 +231,7 @@ public partial class MainWindow
         return cleaned;
     }
 
+
     private void UpdateFileName()
     {
         var singer = string.IsNullOrWhiteSpace(SingerComboBox.Text) ? SoundRecorder.Properties.Resources.Unknown_Singer : SingerComboBox.Text.Trim();
@@ -295,8 +296,8 @@ public partial class MainWindow
             _waveIn.StartRecording();
             _isRecording = true;
 
-            StartButton.IsEnabled = false;
-            StopButton.IsEnabled = true;
+            StartButton.Visibility = Visibility.Collapsed;
+            StopButton.Visibility = Visibility.Visible;
             started = true;
 
             // Start the on-screen HH:MM:SS counter
@@ -335,6 +336,8 @@ public partial class MainWindow
         {
             MessageBox.Show(string.Format(SoundRecorder.Properties.Resources.Error_StartRecording_Format, lastError?.Message), SoundRecorder.Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Error);
             _isRecording = false;
+            StartButton.Visibility = Visibility.Visible;
+            StopButton.Visibility = Visibility.Collapsed;
         }
     }
 
@@ -440,8 +443,8 @@ public partial class MainWindow
             Dispatcher.BeginInvoke(() =>
             {
                 MessageBox.Show(string.Format(SoundRecorder.Properties.Resources.Error_Recording_Format, e.Exception.Message), SoundRecorder.Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Error);
-                StartButton.IsEnabled = true;
-                StopButton.IsEnabled = false;
+                StartButton.Visibility = Visibility.Visible;
+                StopButton.Visibility = Visibility.Collapsed;
             });
             return;
         }
@@ -535,8 +538,8 @@ public partial class MainWindow
                 AlbumComboBox.ItemsSource = null;
                 AlbumComboBox.ItemsSource = _albums;
 
-                StartButton.IsEnabled = true;
-                StopButton.IsEnabled = false;
+                StartButton.Visibility = Visibility.Visible;
+                StopButton.Visibility = Visibility.Collapsed;
 
                 if (_closeAfterSave)
                 {
@@ -549,8 +552,8 @@ public partial class MainWindow
             Dispatcher.BeginInvoke(() =>
             {
                 MessageBox.Show(string.Format(SoundRecorder.Properties.Resources.Error_SaveTags_Format, tagEx.Message), SoundRecorder.Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Error);
-                StartButton.IsEnabled = true;
-                StopButton.IsEnabled = false;
+                StartButton.Visibility = Visibility.Visible;
+                StopButton.Visibility = Visibility.Collapsed;
             });
         }
     }
@@ -563,12 +566,9 @@ public partial class MainWindow
             {
                 _waveIn.StopRecording();
             }
-            else
-            {
-                StartButton.IsEnabled = true;
-            }
-
-            StopButton.IsEnabled = false;
+            // Immediately reflect UI state: show Start, hide Stop
+            StartButton.Visibility = Visibility.Visible;
+            StopButton.Visibility = Visibility.Collapsed;
         }
         catch (Exception ex)
         {

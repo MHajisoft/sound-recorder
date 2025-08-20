@@ -26,6 +26,8 @@
     <ItemGroup>
         <Resource Include="IRANSans(FaNum).ttf"/>
         <Resource Include="app-icon.ico"/>
+        <Resource Include="start.png" />
+        <Resource Include="stop.png" />
     </ItemGroup>
 
     <ItemGroup>
