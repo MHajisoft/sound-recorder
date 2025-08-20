@@ -8,6 +8,7 @@ using System.Windows.Threading;
 using NAudio.Lame;
 using NAudio.Wave;
 using Newtonsoft.Json;
+using SoundRecorder.Properties;
 using File = System.IO.File;
 
 namespace SoundRecorder;
@@ -58,7 +59,7 @@ public partial class MainWindow
             RecordingTimeText.Text = _elapsed.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture);
         };
         _elapsed = TimeSpan.Zero;
-        RecordingTimeText.Text = "00:00:00";
+        RecordingTimeText.Text = SoundRecorder.Properties.Resources.RecordingTime_Initial;
 
         if (_autoStartRecording)
             StartRecording();
@@ -138,7 +139,7 @@ public partial class MainWindow
             SourceComboBox.SelectedIndex = 0;
         else
         {
-            MessageBox.Show("هیچ دستگاه ورودی صوتی یافت نشد.", "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(SoundRecorder.Properties.Resources.Error_NoInputDevices, SoundRecorder.Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Error);
             Close();
         }
     }
@@ -173,7 +174,7 @@ public partial class MainWindow
     // Helpers for filename handling
     private static string SanitizeFileName(string name)
     {
-        if (string.IsNullOrWhiteSpace(name)) return "خواننده ناشناس";
+        if (string.IsNullOrWhiteSpace(name)) return SoundRecorder.Properties.Resources.Unknown_Singer;
         var invalid = Path.GetInvalidFileNameChars();
         var sb = new System.Text.StringBuilder(name.Length);
         foreach (var ch in name)
@@ -183,7 +184,7 @@ public partial class MainWindow
         var cleaned = sb.ToString().Trim();
         cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, "\\s+", " ");
         cleaned = cleaned.Trim(' ', '.');
-        if (string.IsNullOrWhiteSpace(cleaned)) cleaned = "خواننده ناشناس";
+        if (string.IsNullOrWhiteSpace(cleaned)) cleaned = SoundRecorder.Properties.Resources.Unknown_Singer;
         return cleaned;
     }
 
@@ -205,7 +206,7 @@ public partial class MainWindow
 
     private void UpdateFileName()
     {
-        var singer = string.IsNullOrWhiteSpace(SingerComboBox.Text) ? "خواننده ناشناس" : SingerComboBox.Text.Trim();
+        var singer = string.IsNullOrWhiteSpace(SingerComboBox.Text) ? SoundRecorder.Properties.Resources.Unknown_Singer : SingerComboBox.Text.Trim();
         var persianCalendar = new PersianCalendar();
         var now = DateTime.Now;
         var persianDate = $"{persianCalendar.GetYear(now)}-{persianCalendar.GetMonth(now):D2}-{persianCalendar.GetDayOfMonth(now):D2}";
@@ -237,7 +238,7 @@ public partial class MainWindow
 
     private void StartRecording()
     {
-        var baseName = SanitizeFileName(string.IsNullOrWhiteSpace(FileNameTextBox.Text) ? "خواننده ناشناس" : FileNameTextBox.Text.Trim());
+        var baseName = SanitizeFileName(string.IsNullOrWhiteSpace(FileNameTextBox.Text) ? SoundRecorder.Properties.Resources.Unknown_Singer : FileNameTextBox.Text.Trim());
         var initialPath = Path.Combine(_savePath, $"{baseName}.mp3");
         _outputFilePath = GetUniquePath(initialPath);
 
@@ -267,7 +268,7 @@ public partial class MainWindow
 
             // Start the on-screen HH:MM:SS counter
             _elapsed = TimeSpan.Zero;
-            RecordingTimeText.Text = "00:00:00";
+            RecordingTimeText.Text = SoundRecorder.Properties.Resources.RecordingTime_Initial;
             _recordTimer.Stop();
             _recordTimer.Start();
         }
@@ -299,7 +300,7 @@ public partial class MainWindow
 
         if (!started)
         {
-            MessageBox.Show($"خطا در شروع ضبط: {lastError?.Message}", "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(string.Format(SoundRecorder.Properties.Resources.Error_StartRecording_Format, lastError?.Message), SoundRecorder.Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Error);
             _isRecording = false;
         }
     }
@@ -405,7 +406,7 @@ public partial class MainWindow
         {
             Dispatcher.BeginInvoke(() =>
             {
-                MessageBox.Show($"خطا در ضبط صوت: {e.Exception.Message}", "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(SoundRecorder.Properties.Resources.Error_Recording_Format, e.Exception.Message), SoundRecorder.Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Error);
                 StartButton.IsEnabled = true;
                 StopButton.IsEnabled = false;
             });
@@ -425,7 +426,7 @@ public partial class MainWindow
 
         try
         {
-            var desiredBase = SanitizeFileName(string.IsNullOrWhiteSpace(uiTitle) ? "فایل ناشناس" : uiTitle.Trim());
+            var desiredBase = SanitizeFileName(string.IsNullOrWhiteSpace(uiTitle) ? SoundRecorder.Properties.Resources.Unknown_File : uiTitle.Trim());
             var desiredPathInitial = Path.Combine(_savePath, $"{desiredBase}.mp3");
 
             // If path differs, attempt rename
@@ -444,7 +445,7 @@ public partial class MainWindow
                 {
                     Dispatcher.BeginInvoke(() =>
                     {
-                        MessageBox.Show($"تغییر نام فایل پس از ضبط ناموفق بود: {moveEx.Message}", "خطا", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(string.Format(SoundRecorder.Properties.Resources.Warning_RenameAfterRecord_Format, moveEx.Message), SoundRecorder.Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Warning);
                     });
                 }
             }
@@ -460,8 +461,8 @@ public partial class MainWindow
             using (var file = TagLib.File.Create(_outputFilePath))
             {
                 file.Tag.Title = uiTitle;
-                file.Tag.Genres = [string.IsNullOrWhiteSpace(uiCategory) ? "دسته‌بندی پیش‌فرض" : uiCategory];
-                file.Tag.Performers = [string.IsNullOrWhiteSpace(uiSinger) ? "خواننده ناشناس" : uiSinger];
+                file.Tag.Genres = [string.IsNullOrWhiteSpace(uiCategory) ? SoundRecorder.Properties.Resources.Default_Category : uiCategory];
+                file.Tag.Performers = [string.IsNullOrWhiteSpace(uiSinger) ? SoundRecorder.Properties.Resources.Unknown_Singer : uiSinger];
                 file.Save();
             }
 
@@ -498,7 +499,7 @@ public partial class MainWindow
         {
             Dispatcher.BeginInvoke(() =>
             {
-                MessageBox.Show($"ذخیره برچسب‌ها با خطا مواجه شد: {tagEx.Message}", "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(SoundRecorder.Properties.Resources.Error_SaveTags_Format, tagEx.Message), SoundRecorder.Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Error);
                 StartButton.IsEnabled = true;
                 StopButton.IsEnabled = false;
             });
@@ -522,7 +523,7 @@ public partial class MainWindow
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"خطا در توقف ضبط: {ex.Message}", "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(string.Format(SoundRecorder.Properties.Resources.Error_StopRecording_Format, ex.Message), SoundRecorder.Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

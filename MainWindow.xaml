@@ -124,26 +124,26 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <Label Grid.Row="0" Grid.Column="0" Content="منبع ضبط:" Margin="5" HorizontalAlignment="Right"/>
+            <Label Grid.Row="0" Grid.Column="0" Content="{x:Static prop:Resources.Label_Source}" Margin="5" HorizontalAlignment="Right"/>
             <ComboBox Grid.Row="0" Grid.Column="1" x:Name="SourceComboBox" Margin="5" FlowDirection="LeftToRight"/>
 
-            <Label Grid.Row="1" Grid.Column="0" Content="دسته‌بندی:" Margin="5" HorizontalAlignment="Right"/>
+            <Label Grid.Row="1" Grid.Column="0" Content="{x:Static prop:Resources.Label_Category}" Margin="5" HorizontalAlignment="Right"/>
             <ComboBox Grid.Row="1" Grid.Column="1" x:Name="CategoryComboBox" Margin="5" IsEditable="True" 
                       TextBoxBase.TextChanged="CategoryComboBox_TextChanged" FlowDirection="RightToLeft"/>
 
-            <Label Grid.Row="2" Grid.Column="0" Content="نام خواننده:" Margin="5" HorizontalAlignment="Right"/>
+            <Label Grid.Row="2" Grid.Column="0" Content="{x:Static prop:Resources.Label_Singer}" Margin="5" HorizontalAlignment="Right"/>
             <ComboBox Grid.Row="2" Grid.Column="1" x:Name="SingerComboBox" Margin="5" IsEditable="True" 
                       SelectionChanged="SingerComboBox_SelectionChanged" TextBoxBase.TextChanged="SingerComboBox_TextChanged" FlowDirection="RightToLeft"/>
 
-            <Label Grid.Row="3" Grid.Column="0" Content="نام فایل:" Margin="5" HorizontalAlignment="Right"/>
+            <Label Grid.Row="3" Grid.Column="0" Content="{x:Static prop:Resources.Label_FileName}" Margin="5" HorizontalAlignment="Right"/>
             <TextBox Grid.Row="3" Grid.Column="1" x:Name="FileNameTextBox" Margin="5" FlowDirection="RightToLeft"/>
 
             <StackPanel Grid.Row="4" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
-                <Button x:Name="StartButton" Content="شروع ضبط" Width="100" Margin="5" Click="StartButton_Click"/>
-                <Button x:Name="StopButton" Content="توقف ضبط" Width="100" Margin="5" Click="StopButton_Click" IsEnabled="False"/>
+                <Button x:Name="StartButton" Content="{x:Static prop:Resources.Button_Start}" Width="100" Margin="5" Click="StartButton_Click"/>
+                <Button x:Name="StopButton" Content="{x:Static prop:Resources.Button_Stop}" Width="100" Margin="5" Click="StopButton_Click" IsEnabled="False"/>
             </StackPanel>
 
-            <TextBlock x:Name="RecordingTimeText" Grid.Row="5" Grid.ColumnSpan="2" Text="00:00:00" Foreground="Red" FontSize="24" HorizontalAlignment="Center" Margin="0,5,0,5"/>
+            <TextBlock x:Name="RecordingTimeText" Grid.Row="5" Grid.ColumnSpan="2" Text="{x:Static prop:Resources.RecordingTime_Initial}" Foreground="Red" FontSize="24" HorizontalAlignment="Center" Margin="0,5,0,5"/>
 
             <Grid Grid.Row="6" Grid.ColumnSpan="2" Margin="5">
                 <Grid.ColumnDefinitions>
