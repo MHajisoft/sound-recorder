@@ -141,6 +141,15 @@ namespace SoundRecorder.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to نام آلبوم.
+        /// </summary>
+        public static string Label_Album {
+            get {
+                return ResourceManager.GetString("Label_Album", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to نام فایل:.
         /// </summary>
         public static string Label_FileName {
@@ -182,6 +191,15 @@ namespace SoundRecorder.Properties {
         public static string RecordingTime_Initial {
             get {
                 return ResourceManager.GetString("RecordingTime_Initial", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to آلبوم نامشخص.
+        /// </summary>
+        public static string Unknown_Album {
+            get {
+                return ResourceManager.GetString("Unknown_Album", resourceCulture);
             }
         }
         

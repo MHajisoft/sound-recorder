@@ -134,4 +134,10 @@
   <data name="Default_Genre" xml:space="preserve">
     <value>ژانر پیش‌فرض</value>
   </data>
+  <data name="Label_Album" xml:space="preserve">
+    <value>نام آلبوم</value>
+  </data>
+  <data name="Unknown_Album" xml:space="preserve">
+    <value>آلبوم نامشخص</value>
+  </data>
 </root>

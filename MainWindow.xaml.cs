@@ -20,6 +20,7 @@ public partial class MainWindow
     private string _outputFilePath;
     private List<string> _genres = [];
     private List<string> _singers = [];
+    private List<string> _albums = [];
     private const string DataFilePath = "appData.json";
     private string _savePath;
     private bool _autoStartRecording;
@@ -158,11 +159,13 @@ public partial class MainWindow
                     _genres = [];
 
                 _singers = data.TryGetValue("Singers", out var singers) ? singers : [];
+                _albums = data.TryGetValue("Albums", out var albums) ? albums : [];
             }
         }
 
         GenreComboBox.ItemsSource = _genres;
         SingerComboBox.ItemsSource = _singers;
+        AlbumComboBox.ItemsSource = _albums;
     }
 
     private void SaveStoredData()
@@ -170,7 +173,8 @@ public partial class MainWindow
         var data = new Dictionary<string, List<string>>
         {
             { "Genres", _genres },
-            { "Singers", _singers }
+            { "Singers", _singers },
+            { "Albums", _albums }
         };
         File.WriteAllText(DataFilePath, JsonConvert.SerializeObject(data, Formatting.Indented));
     }
@@ -208,6 +212,22 @@ public partial class MainWindow
         return candidate;
     }
 
+    private static string SanitizePathSegmentForFolder(string name, string defaultVal)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return defaultVal;
+        var invalid = Path.GetInvalidFileNameChars();
+        var sb = new System.Text.StringBuilder(name.Length);
+        foreach (var ch in name)
+        {
+            sb.Append(invalid.Contains(ch) ? '-' : ch);
+        }
+        var cleaned = sb.ToString().Trim();
+        cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, "\\s+", " ");
+        cleaned = cleaned.Trim(' ', '.');
+        if (string.IsNullOrWhiteSpace(cleaned)) cleaned = defaultVal;
+        return cleaned;
+    }
+
     private void UpdateFileName()
     {
         var singer = string.IsNullOrWhiteSpace(SingerComboBox.Text) ? SoundRecorder.Properties.Resources.Unknown_Singer : SingerComboBox.Text.Trim();
@@ -233,6 +253,12 @@ public partial class MainWindow
         // Do not mutate the stored list on each key press to avoid incremental entries.
         // Only update the suggested filename as the user types.
         UpdateFileName();
+    }
+
+    private void AlbumComboBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        // Do not mutate the stored list on each key press to avoid incremental entries.
+        // Category (Album) does not affect the suggested file name.
     }
 
     private void StartButton_Click(object sender, RoutedEventArgs e)
@@ -421,17 +447,22 @@ public partial class MainWindow
         string uiTitle = "";
         string uiGenre = "";
         string uiSinger = "";
+        string uiAlbum = "";
         Dispatcher.Invoke(new Action(() =>
         {
             uiTitle = FileNameTextBox.Text;
             uiGenre = GenreComboBox.Text;
             uiSinger = SingerComboBox.Text;
+            uiAlbum = AlbumComboBox.Text;
         }));
 
         try
         {
             var desiredBase = SanitizeFileName(string.IsNullOrWhiteSpace(uiTitle) ? SoundRecorder.Properties.Resources.Unknown_File : uiTitle.Trim());
-            var desiredPathInitial = Path.Combine(_savePath, $"{desiredBase}.mp3");
+            var albumFolder = SanitizePathSegmentForFolder(string.IsNullOrWhiteSpace(uiAlbum) ? SoundRecorder.Properties.Resources.Unknown_Album : uiAlbum.Trim(), SoundRecorder.Properties.Resources.Unknown_Album);
+            var albumDir = Path.Combine(_savePath, albumFolder);
+            Directory.CreateDirectory(albumDir);
+            var desiredPathInitial = Path.Combine(albumDir, $"{desiredBase}.mp3");
 
             // If path differs, attempt rename
             if (!string.Equals(_outputFilePath, desiredPathInitial, StringComparison.OrdinalIgnoreCase))
@@ -467,6 +498,7 @@ public partial class MainWindow
                 file.Tag.Title = uiTitle;
                 file.Tag.Genres = [string.IsNullOrWhiteSpace(uiGenre) ? SoundRecorder.Properties.Resources.Default_Genre : uiGenre];
                 file.Tag.Performers = [string.IsNullOrWhiteSpace(uiSinger) ? SoundRecorder.Properties.Resources.Unknown_Singer : uiSinger];
+                file.Tag.Album = string.IsNullOrWhiteSpace(uiAlbum) ? SoundRecorder.Properties.Resources.Unknown_Album : uiAlbum;
                 file.Save();
             }
 
@@ -479,6 +511,10 @@ public partial class MainWindow
             {
                 _singers.Add(uiSinger);
             }
+            if (!string.IsNullOrWhiteSpace(uiAlbum) && !_albums.Contains(uiAlbum))
+            {
+                _albums.Add(uiAlbum);
+            }
 
             SaveStoredData();
 
@@ -489,6 +525,8 @@ public partial class MainWindow
                 GenreComboBox.ItemsSource = _genres;
                 SingerComboBox.ItemsSource = null;
                 SingerComboBox.ItemsSource = _singers;
+                AlbumComboBox.ItemsSource = null;
+                AlbumComboBox.ItemsSource = _albums;
 
                 StartButton.IsEnabled = true;
                 StopButton.IsEnabled = false;
