@@ -144,7 +144,7 @@
             <TextBox Grid.Row="4" Grid.Column="1" x:Name="FileNameTextBox" Margin="5" FlowDirection="RightToLeft"/>
 
             <StackPanel Grid.Row="5" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10" FlowDirection="LeftToRight">
-                <TextBlock x:Name="RecordingTimeText" Text="{x:Static prop:Resources.RecordingTime_Initial}" Foreground="Red" FontSize="32" VerticalAlignment="Center" Margin="0,5,10,5"/>
+                <TextBlock x:Name="RecordingTimeText" Text="{x:Static prop:Resources.RecordingTime_Initial}" Foreground="Red" FontSize="32" VerticalAlignment="Center" Margin="0,5,10,5" Width="200" TextAlignment="Center"/>
                 <Button x:Name="StartButton" Width="64" Height="64" Margin="5" Click="StartButton_Click" Background="Transparent" BorderThickness="0" ToolTip="{x:Static prop:Resources.Button_Start}">
                     <Image x:Name="StartImage" Source="start.png" Stretch="Uniform"/>
                 </Button>
