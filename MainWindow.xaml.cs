@@ -202,7 +202,7 @@ public partial class MainWindow
         var dir = Path.GetDirectoryName(path);
         var fileName = Path.GetFileNameWithoutExtension(path);
         var ext = Path.GetExtension(path);
-        int counter = 1;
+        var counter = 1;
         string candidate;
         do
         {
@@ -340,34 +340,65 @@ public partial class MainWindow
             // Write audio data to MP3 file
             _mp3Writer?.Write(args.Buffer, 0, args.BytesRecorded);
 
-            // Calculate peak amplitude for visualization (supports 16-bit or 32-bit PCM)
-            float max = 0;
+            // Calculate per-channel peak amplitude for visualization (supports 16-bit or 32-bit PCM)
+            float leftMax = 0f, rightMax = 0f;
+            var channels = _waveIn?.WaveFormat.Channels ?? 1;
             var bytesPerSample = _waveIn?.WaveFormat.BitsPerSample == 32 ? 4 : 2;
-            for (var i = 0; i <= args.BytesRecorded - bytesPerSample; i += bytesPerSample)
+            var blockAlign = bytesPerSample * channels;
+
+            for (var i = 0; i <= args.BytesRecorded - blockAlign; i += blockAlign)
             {
-                float amplitude;
+                // Channel 0 (Left)
+                float amp0;
                 if (bytesPerSample == 4)
                 {
-                    var sample32 = BitConverter.ToInt32(args.Buffer, i);
-                    amplitude = Math.Abs(sample32 / 2147483648f); // normalize int32
+                    var sample32 = BitConverter.ToInt32(args.Buffer, i + 0 * bytesPerSample);
+                    amp0 = Math.Abs(sample32 / 2147483648f);
                 }
                 else
                 {
-                    var sample16 = BitConverter.ToInt16(args.Buffer, i);
-                    amplitude = Math.Abs(sample16 / 32768f);
+                    var sample16 = BitConverter.ToInt16(args.Buffer, i + 0 * bytesPerSample);
+                    amp0 = Math.Abs(sample16 / 32768f);
                 }
+                if (amp0 > leftMax) leftMax = amp0;
 
-                if (amplitude > max) max = amplitude;
+                // Channel 1 (Right) if present
+                if (channels > 1)
+                {
+                    float amp1;
+                    if (bytesPerSample == 4)
+                    {
+                        var sample32b = BitConverter.ToInt32(args.Buffer, i + 1 * bytesPerSample);
+                        amp1 = Math.Abs(sample32b / 2147483648f);
+                    }
+                    else
+                    {
+                        var sample16b = BitConverter.ToInt16(args.Buffer, i + 1 * bytesPerSample);
+                        amp1 = Math.Abs(sample16b / 32768f);
+                    }
+                    if (amp1 > rightMax) rightMax = amp1;
+                }
+            }
+
+            if (channels == 1)
+            {
+                rightMax = leftMax;
             }
 
             // Update ProgressBars on UI thread
             Dispatcher.BeginInvoke(() =>
             {
-                var level = max * 100;
-                if (level < 0) level = 0;
-                if (level > 100) level = 100;
-                RightLevelMeter.Value = level;
-                LeftLevelMeter.Value = level;
+                var leftLevel = leftMax * 100.0;
+                if (leftLevel < 0) leftLevel = 0;
+                if (leftLevel > 100) leftLevel = 100;
+
+                var rightLevel = rightMax * 100.0;
+                if (rightLevel < 0) rightLevel = 0;
+                if (rightLevel > 100) rightLevel = 100;
+
+                // Assign per-channel: LeftLevelMeter shows left channel; RightLevelMeter shows right channel
+                LeftLevelMeter.Value = leftLevel;
+                RightLevelMeter.Value = rightLevel;
             });
         }
         catch
@@ -442,10 +473,10 @@ public partial class MainWindow
         }
 
         // Determine desired filename from UI and rename if needed
-        string uiTitle = "";
-        string uiGenre = "";
-        string uiSinger = "";
-        string uiAlbum = "";
+        var uiTitle = "";
+        var uiGenre = "";
+        var uiSinger = "";
+        var uiAlbum = "";
         Dispatcher.Invoke(new Action(() =>
         {
             uiTitle = FileNameTextBox.Text;
