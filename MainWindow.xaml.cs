@@ -36,7 +36,6 @@ public partial class MainWindow
     {
         InitializeComponent();
 
-
         // Configure WindowChrome programmatically to keep resizing on a borderless window
         var chrome = new WindowChrome
         {
@@ -241,12 +240,6 @@ public partial class MainWindow
         FileNameTextBox.Text = $"{singer}-{persianDate}";
     }
 
-    private void GenreComboBox_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        // Do not mutate the stored list on each key press to avoid incremental entries (h, he, hel, ...)
-        // Final values are added when recording is finished and saved.
-    }
-
     private void SingerComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         UpdateFileName();
@@ -254,15 +247,7 @@ public partial class MainWindow
 
     private void SingerComboBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        // Do not mutate the stored list on each key press to avoid incremental entries.
-        // Only update the suggested filename as the user types.
         UpdateFileName();
-    }
-
-    private void AlbumComboBox_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        // Do not mutate the stored list on each key press to avoid incremental entries.
-        // Category (Album) does not affect the suggested file name.
     }
 
     private void StartButton_Click(object sender, RoutedEventArgs e)
@@ -374,8 +359,8 @@ public partial class MainWindow
                 var level = max * 100;
                 if (level < 0) level = 0;
                 if (level > 100) level = 100;
-                AudioLevelMeter.Value = level;
-                CenterRangeMeter.Value = level;
+                RightLevelMeter.Value = level;
+                LeftLevelMeter.Value = level;
             });
         }
         catch
@@ -433,8 +418,8 @@ public partial class MainWindow
         // Reset audio level meters
         Dispatcher.BeginInvoke(() =>
         {
-            AudioLevelMeter.Value = 0;
-            CenterRangeMeter.Value = 0;
+            RightLevelMeter.Value = 0;
+            LeftLevelMeter.Value = 0;
         });
 
         // If there was a capture error, inform the user

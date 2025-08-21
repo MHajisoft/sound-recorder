@@ -153,12 +153,12 @@
 
             <!-- Vertical meters on the far-left, spanning rows 0..4 and aligning bottom with FileName row -->
             <StackPanel Grid.Row="0" Grid.RowSpan="5" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Stretch" HorizontalAlignment="Left">
-                <ProgressBar x:Name="AudioLevelMeter" Width="10" Margin="0,0,5,0" Minimum="0" Maximum="100" Orientation="Vertical" VerticalAlignment="Stretch" ToolTip="Left">
+                <ProgressBar x:Name="RightLevelMeter" Width="10" Margin="0,0,5,0" Minimum="0" Maximum="100" Orientation="Vertical" VerticalAlignment="Stretch">
                     <ProgressBar.Foreground>
                         <Binding RelativeSource="{RelativeSource Self}" Path="Value" Converter="{StaticResource LevelToBrushConverter}"/>
                     </ProgressBar.Foreground>
                 </ProgressBar>
-                <ProgressBar x:Name="CenterRangeMeter" Width="10" Margin="0" Minimum="0" Maximum="100" Orientation="Vertical" VerticalAlignment="Stretch" ToolTip="Right">
+                <ProgressBar x:Name="LeftLevelMeter" Width="10" Margin="0" Minimum="0" Maximum="100" Orientation="Vertical" VerticalAlignment="Stretch">
                     <ProgressBar.Foreground>
                         <Binding RelativeSource="{RelativeSource Self}" Path="Value" Converter="{StaticResource LevelToBrushConverter}"/>
                     </ProgressBar.Foreground>
@@ -169,12 +169,10 @@
             <ComboBox Grid.Row="0" Grid.Column="1" x:Name="SourceComboBox" Margin="5" FlowDirection="LeftToRight"/>
 
             <Label Grid.Row="1" Grid.Column="0" Content="{x:Static prop:Resources.Label_Album}" Margin="5" HorizontalAlignment="Right"/>
-            <ComboBox Grid.Row="1" Grid.Column="1" x:Name="AlbumComboBox" Margin="5" IsEditable="True"
-                      TextBoxBase.TextChanged="AlbumComboBox_TextChanged" FlowDirection="RightToLeft"/>
+            <ComboBox Grid.Row="1" Grid.Column="1" x:Name="AlbumComboBox" Margin="5" IsEditable="True" FlowDirection="RightToLeft"/>
 
             <Label Grid.Row="2" Grid.Column="0" Content="{x:Static prop:Resources.Label_Genre}" Margin="5" HorizontalAlignment="Right"/>
-            <ComboBox Grid.Row="2" Grid.Column="1" x:Name="GenreComboBox" Margin="5" IsEditable="True" 
-                      TextBoxBase.TextChanged="GenreComboBox_TextChanged" FlowDirection="RightToLeft"/>
+            <ComboBox Grid.Row="2" Grid.Column="1" x:Name="GenreComboBox" Margin="5" IsEditable="True" FlowDirection="RightToLeft"/>
 
             <Label Grid.Row="3" Grid.Column="0" Content="{x:Static prop:Resources.Label_Singer}" Margin="5" HorizontalAlignment="Right"/>
             <ComboBox Grid.Row="3" Grid.Column="1" x:Name="SingerComboBox" Margin="5" IsEditable="True" 
