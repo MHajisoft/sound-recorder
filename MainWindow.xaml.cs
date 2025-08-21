@@ -25,7 +25,7 @@ public partial class MainWindow
     private bool _autoStartRecording;
     private bool _closeAfterSave;
     private bool _isRecording; // Track recording state
-    private DispatcherTimer _recordTimer;
+    private readonly DispatcherTimer _recordTimer;
     private TimeSpan _elapsed;
 
     // Audio configuration (read from appsettings.json)
@@ -240,6 +240,15 @@ public partial class MainWindow
         FileNameTextBox.Text = $"{singer}-{persianDate}";
     }
 
+    private void SetRecordingUi(bool recording)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            StartButton.Visibility = recording ? Visibility.Collapsed : Visibility.Visible;
+            StopButton.Visibility = recording ? Visibility.Visible : Visibility.Collapsed;
+        });
+    }
+
     private void SingerComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         UpdateFileName();
@@ -281,8 +290,7 @@ public partial class MainWindow
             _waveIn.StartRecording();
             _isRecording = true;
 
-            StartButton.Visibility = Visibility.Collapsed;
-            StopButton.Visibility = Visibility.Visible;
+            SetRecordingUi(true);
             started = true;
 
             // Start the on-screen HH:MM:SS counter
@@ -321,8 +329,7 @@ public partial class MainWindow
         {
             MessageBox.Show(string.Format(SoundRecorder.Properties.Resources.Error_StartRecording_Format, lastError?.Message), SoundRecorder.Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Error);
             _isRecording = false;
-            StartButton.Visibility = Visibility.Visible;
-            StopButton.Visibility = Visibility.Collapsed;
+            SetRecordingUi(false);
         }
     }
 
