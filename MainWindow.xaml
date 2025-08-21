@@ -7,7 +7,6 @@
         WindowStyle="None" ResizeMode="NoResize">
 
     <Window.Resources>
-        <soundRecorder:LevelToBrushConverter x:Key="LevelToBrushConverter"/>
         <soundRecorder:SegmentHeightConverter x:Key="SegmentHeightConverter"/>
 
         <!-- Stacked level meter style: draws Green/Yellow/Red segments cumulatively -->
