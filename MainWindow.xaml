@@ -9,7 +9,7 @@
     <Window.Resources>
         <soundRecorder:SegmentHeightConverter x:Key="SegmentHeightConverter"/>
 
-        <!-- Stacked level meter style: draws Green/Yellow/Red segments cumulatively -->
+        <!-- Stacked level meter style: draws Green/Orange/Red segments cumulatively -->
         <Style x:Key="LevelMeterStyle" TargetType="ProgressBar">
             <Setter Property="Template">
                 <Setter.Value>
@@ -26,17 +26,17 @@
                                         </MultiBinding>
                                     </Rectangle.Height>
                                 </Rectangle>
-                                <!-- Yellow segment -->
-                                <Rectangle Fill="Yellow" HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
+                                <!-- Orange segment -->
+                                <Rectangle Fill="Orange" HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
                                     <Rectangle.Margin>
-                                        <MultiBinding Converter="{StaticResource SegmentHeightConverter}" ConverterParameter="YellowMargin">
+                                        <MultiBinding Converter="{StaticResource SegmentHeightConverter}" ConverterParameter="OrangeMargin">
                                             <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Value"/>
                                             <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Maximum"/>
                                             <Binding ElementName="Root" Path="ActualHeight"/>
                                         </MultiBinding>
                                     </Rectangle.Margin>
                                     <Rectangle.Height>
-                                        <MultiBinding Converter="{StaticResource SegmentHeightConverter}" ConverterParameter="Yellow">
+                                        <MultiBinding Converter="{StaticResource SegmentHeightConverter}" ConverterParameter="Orange">
                                             <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Value"/>
                                             <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Maximum"/>
                                             <Binding ElementName="Root" Path="ActualHeight"/>
@@ -144,8 +144,8 @@
 
             <!-- Vertical meters on the far-left, spanning rows 0..4 and aligning bottom with FileName row -->
             <StackPanel Grid.Row="0" Grid.RowSpan="5" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Stretch" HorizontalAlignment="Left">
-                <ProgressBar x:Name="RightLevelMeter" Width="10" Margin="0,0,5,0" Minimum="0" Maximum="100" Orientation="Vertical" VerticalAlignment="Stretch" Style="{StaticResource LevelMeterStyle}"/>
-                <ProgressBar x:Name="LeftLevelMeter" Width="10" Margin="0" Minimum="0" Maximum="100" Orientation="Vertical" VerticalAlignment="Stretch" Style="{StaticResource LevelMeterStyle}"/>
+                <ProgressBar x:Name="RightLevelMeter" Width="10" Margin="0,5,5,5" Minimum="0" Maximum="100" Orientation="Vertical" VerticalAlignment="Stretch" Style="{StaticResource LevelMeterStyle}"/>
+                <ProgressBar x:Name="LeftLevelMeter" Width="10" Margin="0,5,0,5" Minimum="0" Maximum="100" Orientation="Vertical" VerticalAlignment="Stretch" Style="{StaticResource LevelMeterStyle}"/>
             </StackPanel>
 
             <Label Grid.Row="0" Grid.Column="0" Content="{x:Static prop:Resources.Label_Source}" Margin="5" HorizontalAlignment="Right"/>
