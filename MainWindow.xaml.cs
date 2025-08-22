@@ -264,8 +264,95 @@ public partial class MainWindow
         StartRecording();
     }
 
+    private void CleanupRecording(bool deleteFile = true)
+    {
+        // First unsubscribe events to prevent save logic
+        if (_waveIn != null)
+        {
+            _waveIn.DataAvailable -= OnDataAvailable;
+            _waveIn.RecordingStopped -= OnRecordingStopped;
+        }
+
+        // Now stop recording if active
+        if (_waveIn != null && _isRecording)
+        {
+            try
+            {
+                _waveIn.StopRecording();
+            }
+            catch
+            {
+                /* ignore stop errors */
+            }
+        }
+
+        // Dispose and nullify writer first
+        if (_mp3Writer != null)
+        {
+            try
+            {
+                _mp3Writer.Flush();
+                _mp3Writer.Dispose();
+            }
+            catch
+            {
+                /* ignore disposal errors */
+            }
+
+            _mp3Writer = null;
+        }
+
+        // Dispose and nullify wave in
+        if (_waveIn != null)
+        {
+            try
+            {
+                _waveIn.Dispose();
+            }
+            catch
+            {
+                /* ignore disposal errors */
+            }
+
+            _waveIn = null;
+        }
+
+        // Force GC collection to release file handles
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+
+        // Delete file if requested
+        if (deleteFile && !string.IsNullOrEmpty(_outputFilePath))
+        {
+            for (int attempts = 0; attempts < 3; attempts++)
+            {
+                try
+                {
+                    if (File.Exists(_outputFilePath))
+                    {
+                        File.Delete(_outputFilePath);
+                    }
+
+                    break;
+                }
+                catch
+                {
+                    if (attempts < 2)
+                    {
+                        Thread.Sleep(100); // Wait before retry
+                    }
+                }
+            }
+        }
+
+        _isRecording = false;
+    }
+
     private void StartRecording()
     {
+        // Cleanup previous recording and delete any existing temp file
+        CleanupRecording(true);
+
         var baseName = SanitizeFileName(string.IsNullOrWhiteSpace(FileNameTextBox.Text) ? SoundRecorder.Properties.Resources.Unknown_Singer : FileNameTextBox.Text.Trim());
         var initialPath = Path.Combine(_savePath, $"{baseName}.mp3");
         _outputFilePath = GetUniquePath(initialPath);
@@ -281,7 +368,6 @@ public partial class MainWindow
                 WaveFormat = new WaveFormat(_audioSampleRateHz, 16, 2)
             };
 
-            // Use configured MP3 bitrate (kbps)
             _mp3Writer = new LameMP3FileWriter(_outputFilePath, _waveIn.WaveFormat, _mp3BitrateKbps);
 
             _waveIn.DataAvailable += OnDataAvailable;
@@ -302,33 +388,12 @@ public partial class MainWindow
         catch (Exception ex)
         {
             lastError = ex;
-            // Cleanup any partially created resources before retrying
-            try
-            {
-                _mp3Writer?.Dispose();
-            }
-            catch
-            {
-                // ignored
-            }
-
-            try
-            {
-                _waveIn?.Dispose();
-            }
-            catch
-            {
-                // ignored
-            }
-
-            _mp3Writer = null;
-            _waveIn = null;
+            CleanupRecording(true);
         }
 
         if (!started)
         {
-            MessageBox.Show(string.Format(SoundRecorder.Properties.Resources.Error_StartRecording_Format, lastError?.Message), SoundRecorder.Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Error);
-            _isRecording = false;
+            MessageBox.Show(string.Format(SoundRecorder.Properties.Resources.Error_Recording_Format, lastError?.Message), SoundRecorder.Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Error);
             SetRecordingUi(false);
         }
     }
@@ -360,6 +425,7 @@ public partial class MainWindow
                     var sample16 = BitConverter.ToInt16(args.Buffer, i + 0 * bytesPerSample);
                     amp0 = Math.Abs(sample16 / 32768f);
                 }
+
                 if (amp0 > leftMax) leftMax = amp0;
 
                 // Channel 1 (Right) if present
@@ -376,6 +442,7 @@ public partial class MainWindow
                         var sample16b = BitConverter.ToInt16(args.Buffer, i + 1 * bytesPerSample);
                         amp1 = Math.Abs(sample16b / 32768f);
                     }
+
                     if (amp1 > rightMax) rightMax = amp1;
                 }
             }
@@ -589,6 +656,7 @@ public partial class MainWindow
             {
                 _waveIn.StopRecording();
             }
+
             // Immediately reflect UI state: show Start, hide Stop
             StartButton.Visibility = Visibility.Visible;
             StopButton.Visibility = Visibility.Collapsed;
@@ -636,5 +704,39 @@ public partial class MainWindow
         }
 
         Close();
+    }
+
+    private bool _isSourceChanging = false;
+
+    private void SourceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isSourceChanging) return;
+        _isSourceChanging = true;
+
+        try
+        {
+            if (_isRecording && _waveIn != null)
+            {
+                // Reset UI state
+                Dispatcher.BeginInvoke(() =>
+                {
+                    _recordTimer?.Stop();
+                    _elapsed = TimeSpan.Zero;
+                    RecordingTimeText.Text = SoundRecorder.Properties.Resources.RecordingTime_Initial;
+                    RightLevelMeter.Value = 0;
+                    LeftLevelMeter.Value = 0;
+                });
+
+                // Clean up previous recording
+                CleanupRecording(true);
+
+                // Start new recording
+                StartRecording();
+            }
+        }
+        finally
+        {
+            _isSourceChanging = false;
+        }
     }
 }
