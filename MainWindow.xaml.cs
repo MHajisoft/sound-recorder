@@ -717,6 +717,8 @@ public partial class MainWindow
         {
             if (_isRecording && _waveIn != null)
             {
+                var wasRecording = _isRecording;
+                
                 // Reset UI state
                 Dispatcher.BeginInvoke(() =>
                 {
@@ -725,13 +727,16 @@ public partial class MainWindow
                     RecordingTimeText.Text = SoundRecorder.Properties.Resources.RecordingTime_Initial;
                     RightLevelMeter.Value = 0;
                     LeftLevelMeter.Value = 0;
-                });
+                }).Wait(); // Wait for UI updates to complete
 
                 // Clean up previous recording
                 CleanupRecording(true);
 
                 // Start new recording
-                StartRecording();
+                if (wasRecording)
+                {
+                    StartRecording();
+                }
             }
         }
         finally
