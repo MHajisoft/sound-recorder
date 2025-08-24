@@ -9,6 +9,7 @@ using NAudio.Lame;
 using NAudio.Wave;
 using Newtonsoft.Json;
 using SoundRecorder.Models;
+using SoundRecorder.Services;
 using File = System.IO.File;
 
 namespace SoundRecorder;
@@ -79,6 +80,7 @@ public partial class MainWindow
             {
                 _appSettings = new AppSettings();
             }
+
             // Set defaults if missing
             if (string.IsNullOrWhiteSpace(_appSettings.SavePath))
                 _appSettings.SavePath = defaultSavePath;
@@ -117,6 +119,7 @@ public partial class MainWindow
         {
             _appData = new AppData();
         }
+
         GenreComboBox.ItemsSource = _appData.Genres;
         SingerComboBox.ItemsSource = _appData.Singers;
         AlbumComboBox.ItemsSource = _appData.Albums;
@@ -182,11 +185,8 @@ public partial class MainWindow
 
     private void UpdateFileName()
     {
-        var singer = string.IsNullOrWhiteSpace(SingerComboBox.Text) ? SoundRecorder.Properties.Resources.Unknown_Singer : SingerComboBox.Text.Trim();
-        var persianCalendar = new PersianCalendar();
-        var now = DateTime.Now;
-        var persianDate = $"{persianCalendar.GetYear(now)}-{persianCalendar.GetMonth(now):D2}-{persianCalendar.GetDayOfMonth(now):D2}";
-        FileNameTextBox.Text = $"{singer}-{persianDate}";
+        var singer = string.IsNullOrWhiteSpace(SingerComboBox.Text) ? Properties.Resources.Unknown_Singer : SingerComboBox.Text.Trim();
+        FileNameTextBox.Text = $"{singer}-{DateService.GetPersianDate(DateTime.Now)}";
     }
 
     private void SetButtonStates(bool isRecording)
@@ -490,21 +490,23 @@ public partial class MainWindow
         }
 
         // Determine desired filename from UI and rename if needed
-        var uiTitle = "";
-        var uiGenre = "";
-        var uiSinger = "";
-        var uiAlbum = "";
-        Dispatcher.Invoke(new Action(() =>
+        var uiTitle = string.Empty;
+        var uiFileName = string.Empty;
+        var uiGenre = string.Empty;
+        var uiSinger = string.Empty;
+        var uiAlbum = string.Empty;
+        Dispatcher.Invoke(() =>
         {
-            uiTitle = FileNameTextBox.Text;
+            uiTitle = GenreComboBox.Text;
+            uiFileName = FileNameTextBox.Text;
             uiGenre = GenreComboBox.Text;
             uiSinger = SingerComboBox.Text;
             uiAlbum = AlbumComboBox.Text;
-        }));
+        });
 
         try
         {
-            var desiredBase = SanitizeFileName(string.IsNullOrWhiteSpace(uiTitle) ? Properties.Resources.Unknown_File : uiTitle.Trim());
+            var desiredBase = SanitizeFileName(string.IsNullOrWhiteSpace(uiFileName) ? Properties.Resources.Unknown_File : uiFileName.Trim());
             var albumFolder = SanitizePathSegmentForFolder(string.IsNullOrWhiteSpace(uiAlbum) ? Properties.Resources.Unknown_Album : uiAlbum.Trim(), Properties.Resources.Unknown_Album);
             var albumDir = Path.Combine(_appSettings.SavePath, albumFolder);
             Directory.CreateDirectory(albumDir);
@@ -538,14 +540,13 @@ public partial class MainWindow
         {
             using (var file = TagLib.File.Create(_outputFilePath))
             {
-                file.Tag.Title = uiTitle;
-                file.Tag.Genres = [string.IsNullOrWhiteSpace(uiGenre) ? SoundRecorder.Properties.Resources.Default_Genre : uiGenre];
-                file.Tag.Performers = [string.IsNullOrWhiteSpace(uiSinger) ? SoundRecorder.Properties.Resources.Unknown_Singer : uiSinger];
-                file.Tag.Album = string.IsNullOrWhiteSpace(uiAlbum) ? SoundRecorder.Properties.Resources.Unknown_Album : uiAlbum;
+                file.Tag.Title = $"{uiTitle}-{DateService.GetPersianDate(DateTime.Now)}";
+                file.Tag.Genres = [string.IsNullOrWhiteSpace(uiGenre) ? Properties.Resources.Default_Genre : uiGenre];
+                file.Tag.Performers = [string.IsNullOrWhiteSpace(uiSinger) ? Properties.Resources.Unknown_Singer : uiSinger];
+                file.Tag.Album = string.IsNullOrWhiteSpace(uiAlbum) ? Properties.Resources.Unknown_Album : uiAlbum;
 
                 // Set Year tag using Persian calendar
-                var pc = new PersianCalendar();
-                file.Tag.Year = (uint)pc.GetYear(DateTime.Now);
+                file.Tag.Year = DateService.GetPersianYear(DateTime.Now);
 
                 file.Save();
             }
@@ -664,7 +665,7 @@ public partial class MainWindow
             if (_isRecording && _waveIn != null)
             {
                 var wasRecording = _isRecording;
-                
+
                 // Reset UI state
                 Dispatcher.BeginInvoke(() =>
                 {
