@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:soundRecorder="clr-namespace:SoundRecorder"
         xmlns:prop="clr-namespace:SoundRecorder.Properties"
-        Title="{x:Static prop:Resources.Window_Title}" Height="340" Width="400" FlowDirection="LeftToRight" Icon="app-icon.ico"
+        Title="{x:Static prop:Resources.Window_Title}" Height="340" Width="400" FlowDirection="LeftToRight" Icon="Images/app-icon.ico"
         WindowStyle="None" ResizeMode="NoResize">
 
     <Window.Resources>
@@ -167,10 +167,10 @@
             <StackPanel Grid.Row="5" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10" FlowDirection="LeftToRight">
                 <TextBlock x:Name="RecordingTimeText" Text="{x:Static prop:Resources.RecordingTime_Initial}" Foreground="Red" FontSize="32" VerticalAlignment="Center" Margin="0,5,10,5" Width="200" TextAlignment="Center"/>
                 <Button x:Name="StartButton" Width="64" Height="64" Margin="5" Click="StartButton_Click" Background="Transparent" BorderThickness="0" ToolTip="{x:Static prop:Resources.Button_Start}">
-                    <Image x:Name="StartImage" Source="start.png" Stretch="Uniform"/>
+                    <Image x:Name="StartImage" Source="Images/start.png" Stretch="Uniform"/>
                 </Button>
                 <Button x:Name="StopButton" Width="64" Height="64" Margin="5" Click="StopButton_Click" Background="Transparent" BorderThickness="0" ToolTip="{x:Static prop:Resources.Button_Stop}" Visibility="Collapsed">
-                    <Image x:Name="StopImage" Source="stop.png" Stretch="Uniform"/>
+                    <Image x:Name="StopImage" Source="Images/stop.png" Stretch="Uniform"/>
                 </Button>
             </StackPanel>
         </Grid>

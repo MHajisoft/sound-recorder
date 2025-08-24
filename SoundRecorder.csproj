@@ -6,7 +6,7 @@
         <Nullable>disable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <UseWPF>true</UseWPF>
-        <ApplicationIcon>app-icon.ico</ApplicationIcon>
+        <ApplicationIcon>Images\app-icon.ico</ApplicationIcon>
     </PropertyGroup>
 
     <ItemGroup>
@@ -24,10 +24,10 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Resource Include="IRANSans(FaNum).ttf"/>
-        <Resource Include="app-icon.ico"/>
-        <Resource Include="start.png" />
-        <Resource Include="stop.png" />
+        <Resource Include="Fonts\IRANSans(FaNum).ttf"/>
+        <Resource Include="Images\app-icon.ico"/>
+        <Resource Include="Images\start.png" />
+        <Resource Include="Images\stop.png" />
     </ItemGroup>
 
     <ItemGroup>
