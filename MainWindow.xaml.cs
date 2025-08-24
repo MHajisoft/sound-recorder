@@ -8,6 +8,7 @@ using System.Windows.Threading;
 using NAudio.Lame;
 using NAudio.Wave;
 using Newtonsoft.Json;
+using SoundRecorder.Models;
 using File = System.IO.File;
 
 namespace SoundRecorder;
@@ -17,20 +18,14 @@ public partial class MainWindow
     private WaveInEvent _waveIn;
     private LameMP3FileWriter _mp3Writer;
     private string _outputFilePath;
-    private List<string> _genres = [];
-    private List<string> _singers = [];
-    private List<string> _albums = [];
     private const string DataFilePath = "appData.json";
-    private string _savePath;
-    private bool _autoStartRecording;
-    private bool _closeAfterSave;
     private bool _isRecording; // Track recording state
     private readonly DispatcherTimer _recordTimer;
     private TimeSpan _elapsed;
+    private bool _isSourceChanging;
 
-    // Audio configuration (read from appsettings.json)
-    private int _audioSampleRateHz = 44100; // default 44.1 kHz if not configured
-    private int _mp3BitrateKbps = 128; // default 128 kbps MP3
+    private AppSettings _appSettings;
+    private AppData _appData;
 
     public MainWindow()
     {
@@ -61,14 +56,13 @@ public partial class MainWindow
         _elapsed = TimeSpan.Zero;
         RecordingTimeText.Text = SoundRecorder.Properties.Resources.RecordingTime_Initial;
 
-        if (_autoStartRecording)
+        if (_appSettings is { AutoStartRecording: true })
             StartRecording();
     }
 
     private void LoadAppSettings()
     {
         var defaultSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Recordings");
-
         try
         {
             string[] candidates =
@@ -76,55 +70,23 @@ public partial class MainWindow
                 "appsettings.json",
                 Path.Combine(AppContext.BaseDirectory, "appsettings.json")
             ];
-
             var json = (from path in candidates where !string.IsNullOrWhiteSpace(path) && File.Exists(path) select File.ReadAllText(path)).FirstOrDefault();
-
             if (!string.IsNullOrWhiteSpace(json))
             {
-                var map = JsonConvert.DeserializeObject<Dictionary<string, object>>(json) ?? new Dictionary<string, object>();
-
-                _savePath = map.TryGetValue("SavePath", out var savePathVal) && !string.IsNullOrWhiteSpace(savePathVal?.ToString()) ? savePathVal!.ToString() : defaultSavePath;
-                _autoStartRecording = map.TryGetValue("AutoStartRecording", out var autoVal) && (autoVal is bool b ? b : bool.TryParse(autoVal?.ToString(), out var b2) && b2);
-                _closeAfterSave = map.TryGetValue("CloseAfterSave", out var closeVal) && (closeVal is bool b3 ? b3 : bool.TryParse(closeVal?.ToString(), out var b4) && b4);
-
-                // Audio settings (optional)
-                int ParseInt(object val, int defaultVal)
-                {
-                    if (val == null) return defaultVal;
-                    var s = val.ToString();
-                    if (int.TryParse(s, out var n)) return n;
-                    var digits = new string(s!.Where(char.IsDigit).ToArray());
-                    return int.TryParse(digits, out var n2) ? n2 : defaultVal;
-                }
-
-                if (map.TryGetValue("SampleRateHz", out var srVal))
-                {
-                    var sr = ParseInt(srVal, _audioSampleRateHz);
-                    if (sr > 0) _audioSampleRateHz = sr;
-                }
-
-                if (map.TryGetValue("Mp3BitrateKbps", out var brVal))
-                {
-                    var br = ParseInt(brVal, _mp3BitrateKbps);
-                    if (br > 0) _mp3BitrateKbps = br;
-                }
+                _appSettings = JsonConvert.DeserializeObject<AppSettings>(json) ?? new AppSettings();
             }
             else
             {
-                _savePath = defaultSavePath;
-                _autoStartRecording = false;
-                _closeAfterSave = false;
+                _appSettings = new AppSettings();
             }
+            // Set defaults if missing
+            if (string.IsNullOrWhiteSpace(_appSettings.SavePath))
+                _appSettings.SavePath = defaultSavePath;
         }
         catch
         {
-            _savePath = defaultSavePath;
-            _autoStartRecording = false;
-            _closeAfterSave = false;
+            _appSettings = new AppSettings { SavePath = defaultSavePath };
         }
-
-        // Create the save path directory if it doesn't exist
-        Directory.CreateDirectory(_savePath!);
     }
 
     private void LoadAudioSources()
@@ -149,33 +111,20 @@ public partial class MainWindow
         if (File.Exists(DataFilePath))
         {
             var json = File.ReadAllText(DataFilePath);
-            var data = JsonConvert.DeserializeObject<Dictionary<string, List<string>>>(json);
-            if (data != null)
-            {
-                if (data.TryGetValue("Genres", out var genres))
-                    _genres = genres;
-                else
-                    _genres = [];
-
-                _singers = data.TryGetValue("Singers", out var singers) ? singers : [];
-                _albums = data.TryGetValue("Albums", out var albums) ? albums : [];
-            }
+            _appData = JsonConvert.DeserializeObject<AppData>(json) ?? new AppData();
         }
-
-        GenreComboBox.ItemsSource = _genres;
-        SingerComboBox.ItemsSource = _singers;
-        AlbumComboBox.ItemsSource = _albums;
+        else
+        {
+            _appData = new AppData();
+        }
+        GenreComboBox.ItemsSource = _appData.Genres;
+        SingerComboBox.ItemsSource = _appData.Singers;
+        AlbumComboBox.ItemsSource = _appData.Albums;
     }
 
     private void SaveStoredData()
     {
-        var data = new Dictionary<string, List<string>>
-        {
-            { "Genres", _genres },
-            { "Singers", _singers },
-            { "Albums", _albums }
-        };
-        File.WriteAllText(DataFilePath, JsonConvert.SerializeObject(data, Formatting.Indented));
+        File.WriteAllText(DataFilePath, JsonConvert.SerializeObject(_appData, Formatting.Indented));
     }
 
     // Helpers for filename handling
@@ -353,22 +302,22 @@ public partial class MainWindow
         // Cleanup previous recording and delete any existing temp file
         CleanupRecording(true);
 
-        var baseName = SanitizeFileName(string.IsNullOrWhiteSpace(FileNameTextBox.Text) ? SoundRecorder.Properties.Resources.Unknown_Singer : FileNameTextBox.Text.Trim());
-        var initialPath = Path.Combine(_savePath, $"{baseName}.mp3");
+        var baseName = SanitizeFileName(string.IsNullOrWhiteSpace(FileNameTextBox.Text) ? Properties.Resources.Unknown_Singer : FileNameTextBox.Text.Trim());
+        var initialPath = Path.Combine(_appSettings.SavePath, $"{baseName}.mp3");
         _outputFilePath = GetUniquePath(initialPath);
 
         var started = false;
-        Exception? lastError = null;
+        Exception lastError = null;
 
         try
         {
             _waveIn = new WaveInEvent
             {
                 DeviceNumber = SourceComboBox.SelectedIndex,
-                WaveFormat = new WaveFormat(_audioSampleRateHz, 16, 2)
+                WaveFormat = new WaveFormat(_appSettings.SampleRateHz, 16, 2)
             };
 
-            _mp3Writer = new LameMP3FileWriter(_outputFilePath, _waveIn.WaveFormat, _mp3BitrateKbps);
+            _mp3Writer = new LameMP3FileWriter(_outputFilePath, _waveIn.WaveFormat, _appSettings.Mp3BitrateKbps);
 
             _waveIn.DataAvailable += OnDataAvailable;
             _waveIn.RecordingStopped += OnRecordingStopped;
@@ -381,7 +330,7 @@ public partial class MainWindow
 
             // Start the on-screen HH:MM:SS counter
             _elapsed = TimeSpan.Zero;
-            RecordingTimeText.Text = SoundRecorder.Properties.Resources.RecordingTime_Initial;
+            RecordingTimeText.Text = Properties.Resources.RecordingTime_Initial;
             _recordTimer.Stop();
             _recordTimer.Start();
         }
@@ -393,7 +342,7 @@ public partial class MainWindow
 
         if (!started)
         {
-            MessageBox.Show(string.Format(SoundRecorder.Properties.Resources.Error_Recording_Format, lastError?.Message), SoundRecorder.Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(string.Format(Properties.Resources.Error_Recording_Format, lastError?.Message), Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Error);
             SetRecordingUi(false);
         }
     }
@@ -474,7 +423,7 @@ public partial class MainWindow
         }
     }
 
-    private void OnRecordingStopped(object? sender, StoppedEventArgs e)
+    private void OnRecordingStopped(object sender, StoppedEventArgs e)
     {
         // Unsubscribe first to avoid re-entrancy
         if (_waveIn != null)
@@ -554,9 +503,9 @@ public partial class MainWindow
 
         try
         {
-            var desiredBase = SanitizeFileName(string.IsNullOrWhiteSpace(uiTitle) ? SoundRecorder.Properties.Resources.Unknown_File : uiTitle.Trim());
-            var albumFolder = SanitizePathSegmentForFolder(string.IsNullOrWhiteSpace(uiAlbum) ? SoundRecorder.Properties.Resources.Unknown_Album : uiAlbum.Trim(), SoundRecorder.Properties.Resources.Unknown_Album);
-            var albumDir = Path.Combine(_savePath, albumFolder);
+            var desiredBase = SanitizeFileName(string.IsNullOrWhiteSpace(uiTitle) ? Properties.Resources.Unknown_File : uiTitle.Trim());
+            var albumFolder = SanitizePathSegmentForFolder(string.IsNullOrWhiteSpace(uiAlbum) ? Properties.Resources.Unknown_Album : uiAlbum.Trim(), Properties.Resources.Unknown_Album);
+            var albumDir = Path.Combine(_appSettings.SavePath, albumFolder);
             Directory.CreateDirectory(albumDir);
             var desiredPathInitial = Path.Combine(albumDir, $"{desiredBase}.mp3");
 
@@ -601,19 +550,19 @@ public partial class MainWindow
             }
 
             // Add final values to lists once recording finished
-            if (!string.IsNullOrWhiteSpace(uiGenre) && !_genres.Contains(uiGenre))
+            if (!string.IsNullOrWhiteSpace(uiGenre) && !_appData.Genres.Contains(uiGenre))
             {
-                _genres.Add(uiGenre);
+                _appData.Genres.Add(uiGenre);
             }
 
-            if (!string.IsNullOrWhiteSpace(uiSinger) && !_singers.Contains(uiSinger))
+            if (!string.IsNullOrWhiteSpace(uiSinger) && !_appData.Singers.Contains(uiSinger))
             {
-                _singers.Add(uiSinger);
+                _appData.Singers.Add(uiSinger);
             }
 
-            if (!string.IsNullOrWhiteSpace(uiAlbum) && !_albums.Contains(uiAlbum))
+            if (!string.IsNullOrWhiteSpace(uiAlbum) && !_appData.Albums.Contains(uiAlbum))
             {
-                _albums.Add(uiAlbum);
+                _appData.Albums.Add(uiAlbum);
             }
 
             SaveStoredData();
@@ -622,16 +571,16 @@ public partial class MainWindow
             {
                 // Refresh dropdowns to reflect newly added entries after final save
                 GenreComboBox.ItemsSource = null;
-                GenreComboBox.ItemsSource = _genres;
+                GenreComboBox.ItemsSource = _appData.Genres;
                 SingerComboBox.ItemsSource = null;
-                SingerComboBox.ItemsSource = _singers;
+                SingerComboBox.ItemsSource = _appData.Singers;
                 AlbumComboBox.ItemsSource = null;
-                AlbumComboBox.ItemsSource = _albums;
+                AlbumComboBox.ItemsSource = _appData.Albums;
 
                 StartButton.Visibility = Visibility.Visible;
                 StopButton.Visibility = Visibility.Collapsed;
 
-                if (_closeAfterSave)
+                if (_appSettings.CloseAfterSave)
                 {
                     Application.Current.Shutdown();
                 }
@@ -689,7 +638,7 @@ public partial class MainWindow
         // If recording is active, stop and save before closing
         if (_isRecording && _waveIn != null)
         {
-            _closeAfterSave = true; // trigger shutdown after RecordingStopped completes save/tagging
+            _appSettings.CloseAfterSave = true; // trigger shutdown after RecordingStopped completes save/tagging
             try
             {
                 _waveIn.StopRecording();
@@ -706,7 +655,6 @@ public partial class MainWindow
         Close();
     }
 
-    private bool _isSourceChanging = false;
 
     private void SourceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
