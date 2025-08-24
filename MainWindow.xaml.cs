@@ -189,13 +189,15 @@ public partial class MainWindow
         FileNameTextBox.Text = $"{singer}-{persianDate}";
     }
 
+    private void SetButtonStates(bool isRecording)
+    {
+        StartButton.Visibility = isRecording ? Visibility.Collapsed : Visibility.Visible;
+        StopButton.Visibility = isRecording ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     private void SetRecordingUi(bool recording)
     {
-        Dispatcher.BeginInvoke(() =>
-        {
-            StartButton.Visibility = recording ? Visibility.Collapsed : Visibility.Visible;
-            StopButton.Visibility = recording ? Visibility.Visible : Visibility.Collapsed;
-        });
+        Dispatcher.BeginInvoke(() => SetButtonStates(recording));
     }
 
     private void SingerComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -481,9 +483,8 @@ public partial class MainWindow
         {
             Dispatcher.BeginInvoke(() =>
             {
-                MessageBox.Show(string.Format(SoundRecorder.Properties.Resources.Error_Recording_Format, e.Exception.Message), SoundRecorder.Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Error);
-                StartButton.Visibility = Visibility.Visible;
-                StopButton.Visibility = Visibility.Collapsed;
+                MessageBox.Show(string.Format(Properties.Resources.Error_Recording_Format, e.Exception.Message), Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Error);
+                SetButtonStates(false);
             });
             return;
         }
@@ -577,8 +578,7 @@ public partial class MainWindow
                 AlbumComboBox.ItemsSource = null;
                 AlbumComboBox.ItemsSource = _appData.Albums;
 
-                StartButton.Visibility = Visibility.Visible;
-                StopButton.Visibility = Visibility.Collapsed;
+                SetButtonStates(false);
 
                 if (_appSettings.CloseAfterSave)
                 {
@@ -591,8 +591,7 @@ public partial class MainWindow
             Dispatcher.BeginInvoke(() =>
             {
                 MessageBox.Show(string.Format(SoundRecorder.Properties.Resources.Error_SaveTags_Format, tagEx.Message), SoundRecorder.Properties.Resources.Error_Title, MessageBoxButton.OK, MessageBoxImage.Error);
-                StartButton.Visibility = Visibility.Visible;
-                StopButton.Visibility = Visibility.Collapsed;
+                SetButtonStates(false);
             });
         }
     }
@@ -606,9 +605,8 @@ public partial class MainWindow
                 _waveIn.StopRecording();
             }
 
-            // Immediately reflect UI state: show Start, hide Stop
-            StartButton.Visibility = Visibility.Visible;
-            StopButton.Visibility = Visibility.Collapsed;
+            // Immediately reflect UI state
+            SetButtonStates(false);
         }
         catch (Exception ex)
         {
